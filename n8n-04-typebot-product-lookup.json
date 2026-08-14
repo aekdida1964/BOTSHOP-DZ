@@ -1,0 +1,69 @@
+{
+  "name": "BOTSHOP-DZ · 04 Typebot: البحث عن منتج",
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "id": "webhook-product-lookup",
+      "name": "Webhook: سؤال عن منتج من Typebot",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [ -600, 0 ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "botshop-typebot-product-lookup",
+        "responseMode": "lastNode",
+        "options": {},
+        "notes": "يستقبل query params: store_id و query (اسم المنتج المكتوب من العميل). فعّل 'Respond to Webhook' أو استخدم responseMode=lastNode لإرجاع النتيجة مباشرة لـ Typebot."
+      }
+    },
+    {
+      "id": "search-products",
+      "name": "بحث عن المنتج في Supabase (ilike)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ -380, 0 ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/products?store_id=eq.{{ $json.query.store_id }}&is_active=eq.true&title=ilike.*{{ $json.query.query }}*&select=id,title,price,stock&limit=1",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        },
+        "options": {},
+        "notes": "بحث نصي تقريبي (ilike) على عمود title. لنتائج أدق مستقبلاً يُفضَّل بحث نصي كامل (Full Text Search) في Postgres، لكن هذا يكفي كبداية."
+      }
+    },
+    {
+      "id": "format-response",
+      "name": "تنسيق الاستجابة لـ Typebot",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [ -160, 0 ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "name": "found", "type": "boolean", "value": "={{ $json.length > 0 }}" },
+            { "name": "name", "type": "string", "value": "={{ $json.length > 0 ? $json[0].title : '' }}" },
+            { "name": "price", "type": "number", "value": "={{ $json.length > 0 ? $json[0].price : 0 }}" },
+            { "name": "stock", "type": "number", "value": "={{ $json.length > 0 ? $json[0].stock : 0 }}" }
+          ]
+        },
+        "notes": "هذا الشكل (found/name/price/stock) هو ما يقرأه Webhook Block داخل Typebot لعرض رد ديناميكي للعميل."
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: سؤال عن منتج من Typebot": {
+      "main": [[ { "node": "بحث عن المنتج في Supabase (ilike)", "type": "main", "index": 0 } ]]
+    },
+    "بحث عن المنتج في Supabase (ilike)": {
+      "main": [[ { "node": "تنسيق الاستجابة لـ Typebot", "type": "main", "index": 0 } ]]
+    }
+  }
+}

@@ -1,0 +1,149 @@
+{
+  "name": "BOTSHOP-DZ · 02 معالجة الإحالات عند التسجيل",
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "id": "webhook-new-profile",
+      "name": "Webhook: تسجيل مستخدم جديد",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [ -600, 0 ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "botshop-new-profile",
+        "responseMode": "onReceived",
+        "options": {},
+        "notes": "يُستدعى من Supabase Database Webhook عند INSERT على جدول profiles. يُشغَّل فقط إن كان الحقل referred_by غير فارغ."
+      }
+    },
+    {
+      "id": "if-has-referral",
+      "name": "هل يوجد referred_by؟",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [ -380, 0 ],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.body.record.referred_by }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "get-referred-role",
+      "name": "تحديد نوع الإحالة (تاجر/عميل)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [ -160, -100 ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "referral_type",
+              "type": "string",
+              "value": "={{ ['supplier','retailer','contracted'].includes($json.body.record.role) ? 'merchant' : 'customer' }}"
+            }
+          ]
+        },
+        "notes": "referral_type يحدد أي منطق يُطبَّق لاحقاً: مكافأة 500 دج للتاجر، أو كود خصم لاحق عند أول عملية شراء للعميل (يُعالَج في سير عمل منفصل عند إتمام الطلب)."
+      }
+    },
+    {
+      "id": "insert-referral-row",
+      "name": "تسجيل العلاقة في جدول referrals",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ 60, -100 ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/referrals",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "return=representation" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"referrer_id\": \"{{ $json.body.record.referred_by }}\",\n  \"referred_id\": \"{{ $json.body.record.id }}\",\n  \"type\": \"{{ $json.referral_type }}\",\n  \"used\": false\n}"
+      }
+    },
+    {
+      "id": "if-is-merchant-referral",
+      "name": "هل الإحالة لتاجر؟",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [ 280, -100 ],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            { "leftValue": "={{ $('تحديد نوع الإحالة (تاجر/عميل)').item.json.referral_type }}", "rightValue": "merchant", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        },
+        "notes": "مكافأة الـ500 دج لا تُضاف فوراً هنا؛ تُضاف فقط عند اشتراك التاجر المُحال في أول خطة مدفوعة (سير عمل مستقل يُراقب subscription_history)، تفعيلاً لقاعدة 'إحالة ناجحة' الفعلية."
+      }
+    },
+    {
+      "id": "noop-wait-subscription",
+      "name": "بانتظار أول اشتراك مدفوع (لا إجراء الآن)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [ 500, -160 ],
+      "parameters": {}
+    },
+    {
+      "id": "noop-customer-referral-pending",
+      "name": "بانتظار أول عملية شراء للعميل المُحال",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [ 500, -40 ],
+      "parameters": {}
+    },
+    {
+      "id": "noop-no-referral",
+      "name": "لا يوجد كود إحالة — إنهاء",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [ -160, 100 ],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Webhook: تسجيل مستخدم جديد": {
+      "main": [[ { "node": "هل يوجد referred_by؟", "type": "main", "index": 0 } ]]
+    },
+    "هل يوجد referred_by؟": {
+      "main": [
+        [ { "node": "تحديد نوع الإحالة (تاجر/عميل)", "type": "main", "index": 0 } ],
+        [ { "node": "لا يوجد كود إحالة — إنهاء", "type": "main", "index": 0 } ]
+      ]
+    },
+    "تحديد نوع الإحالة (تاجر/عميل)": {
+      "main": [[ { "node": "تسجيل العلاقة في جدول referrals", "type": "main", "index": 0 } ]]
+    },
+    "تسجيل العلاقة في جدول referrals": {
+      "main": [[ { "node": "هل الإحالة لتاجر؟", "type": "main", "index": 0 } ]]
+    },
+    "هل الإحالة لتاجر؟": {
+      "main": [
+        [ { "node": "بانتظار أول اشتراك مدفوع (لا إجراء الآن)", "type": "main", "index": 0 } ],
+        [ { "node": "بانتظار أول عملية شراء للعميل المُحال", "type": "main", "index": 0 } ]
+      ]
+    }
+  }
+}

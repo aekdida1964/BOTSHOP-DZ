@@ -1,0 +1,146 @@
+{
+  "name": "BOTSHOP-DZ · 01 إشعار طلب جديد عبر واتساب",
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "id": "webhook-new-order",
+      "name": "Webhook: طلب جديد من Supabase",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [ -600, 0 ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "botshop-new-order",
+        "responseMode": "onReceived",
+        "options": {},
+        "notes": "يُستدعى هذا الرابط من Supabase Database Webhook عند INSERT على جدول orders. أضف الرابط الناتج من هذا العقدة في: Supabase → Database → Webhooks."
+      }
+    },
+    {
+      "id": "get-blacklist",
+      "name": "جلب تصنيف القائمة السوداء للعميل",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ -380, 0 ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/shared_blacklist?customer_id=eq.{{ $json.body.record.customer_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        },
+        "options": {},
+        "notes": "يتطلب متغيرات بيئة SUPABASE_URL و SUPABASE_SERVICE_ROLE_KEY في إعدادات n8n."
+      }
+    },
+    {
+      "id": "get-store-info",
+      "name": "جلب بيانات المتجر (رقم هاتف التاجر)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ -380, 200 ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/stores?id=eq.{{ $('Webhook: طلب جديد من Supabase').item.json.body.record.store_id }}&select=owner_id,blacklist_enabled,profiles(phone,store_name)",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        },
+        "options": {},
+        "notes": "يفترض هذا الاستعلام وجود علاقة FK قابلة للـ embed بين stores وprofiles حسب إعداد Supabase الفعلي؛ قد تحتاج لتعديل صياغة select حسب مخططك."
+      }
+    },
+    {
+      "id": "merge-data",
+      "name": "دمج بيانات الطلب والقائمة السوداء والمتجر",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [ -160, 100 ],
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "notes": "يدمج نتيجة عقدتي جلب القائمة السوداء وبيانات المتجر في عنصر واحد."
+      }
+    },
+    {
+      "id": "build-message",
+      "name": "بناء نص رسالة واتساب",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [ 60, 100 ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "whatsapp_message",
+              "type": "string",
+              "value": "=🛎️ طلب جديد رقم {{ $('Webhook: طلب جديد من Supabase').item.json.body.record.id }}\nالمبلغ: {{ $('Webhook: طلب جديد من Supabase').item.json.body.record.total_product_price }} دج\nطريقة الدفع: {{ $('Webhook: طلب جديد من Supabase').item.json.body.record.payment_method }}\n{{ $json[0] && $json[0].color === 'red' ? '🔴 تنبيه: هذا العميل في القائمة السوداء الحمراء — يُفضّل طلب دفع التوصيل مسبقاً.' : ($json[0] && $json[0].color === 'orange' ? '🟠 تنبيه: راجع سجل هذا العميل قبل التأكيد.' : '🟢 عميل بلا سجل مرتجعات ملحوظ.') }}"
+            },
+            {
+              "name": "merchant_phone",
+              "type": "string",
+              "value": "={{ $json[1].profiles.phone }}"
+            }
+          ]
+        },
+        "notes": "منطق التصنيف هنا مبسّط لأغراض العرض؛ يُفضَّل نقله لدالة Supabase Edge Function أو تعديله حسب البنية الفعلية لمخرجات العقد السابقة."
+      }
+    },
+    {
+      "id": "send-whatsapp",
+      "name": "إرسال رسالة عبر WhatsApp Cloud API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ 280, 100 ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.WHATSAPP_CLOUD_API_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.merchant_phone }}\",\n  \"type\": \"text\",\n  \"text\": { \"body\": \"{{ $json.whatsapp_message }}\" }\n}",
+        "options": {},
+        "notes": "يتطلب حساب WhatsApp Business موثّق لدى Meta، ومتغيرات WHATSAPP_PHONE_NUMBER_ID و WHATSAPP_CLOUD_API_TOKEN. راجع توثيق Meta Cloud API قبل الإنتاج."
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: طلب جديد من Supabase": {
+      "main": [[
+        { "node": "جلب تصنيف القائمة السوداء للعميل", "type": "main", "index": 0 },
+        { "node": "جلب بيانات المتجر (رقم هاتف التاجر)", "type": "main", "index": 0 }
+      ]]
+    },
+    "جلب تصنيف القائمة السوداء للعميل": {
+      "main": [[ { "node": "دمج بيانات الطلب والقائمة السوداء والمتجر", "type": "main", "index": 0 } ]]
+    },
+    "جلب بيانات المتجر (رقم هاتف التاجر)": {
+      "main": [[ { "node": "دمج بيانات الطلب والقائمة السوداء والمتجر", "type": "main", "index": 1 } ]]
+    },
+    "دمج بيانات الطلب والقائمة السوداء والمتجر": {
+      "main": [[ { "node": "بناء نص رسالة واتساب", "type": "main", "index": 0 } ]]
+    },
+    "بناء نص رسالة واتساب": {
+      "main": [[ { "node": "إرسال رسالة عبر WhatsApp Cloud API", "type": "main", "index": 0 } ]]
+    }
+  }
+}
