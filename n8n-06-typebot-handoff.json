@@ -1,0 +1,96 @@
+{
+  "name": "BOTSHOP-DZ · 06 Typebot: تسليم المحادثة للتاجر",
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "id": "webhook-handoff",
+      "name": "Webhook: تسليم من Typebot",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [ -600, 0 ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "botshop-typebot-handoff",
+        "responseMode": "onReceived",
+        "options": {},
+        "notes": "يستقبل JSON body: { store_id, customer_name, customer_phone, product_of_interest, intent }. ملاحظة: هذا السير لا يُنشئ سجل 'طلب' حقيقي في جدول orders، لأن ذلك يتطلب اختيار منتج مؤكد وسعر ومعرّف عميل مسجَّل. هو فقط يُنبّه التاجر فوراً بمحادثة جديدة، ليكمل هو تأكيد الطلب يدوياً عبر واتساب أو من لوحة تحكمه."
+      }
+    },
+    {
+      "id": "get-store-owner-phone",
+      "name": "جلب رقم هاتف صاحب المتجر",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ -380, 0 ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/stores?id=eq.{{ $json.body.store_id }}&select=owner_id,profiles(phone,store_name)",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        },
+        "notes": "نفس ملاحظة سير العمل 01: يفترض علاقة embed قابلة للاستعلام بين stores وprofiles حسب إعداد Supabase الفعلي؛ عدّل صياغة select إن احتجت."
+      }
+    },
+    {
+      "id": "build-handoff-message",
+      "name": "بناء نص الإشعار",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [ -160, 0 ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "name": "whatsapp_message",
+              "type": "string",
+              "value": "=💬 محادثة جديدة من المساعد الآلي\nالاسم: {{ $('Webhook: تسليم من Typebot').item.json.body.customer_name }}\nالهاتف: {{ $('Webhook: تسليم من Typebot').item.json.body.customer_phone }}\nالسبب: {{ $('Webhook: تسليم من Typebot').item.json.body.intent === 'order' ? 'مهتم بالشراء — ' + $('Webhook: تسليم من Typebot').item.json.body.product_of_interest : 'يريد التحدث معك مباشرة' }}\n\n⚡ يُفضَّل الرد خلال دقائق للحفاظ على تجربة العميل."
+            },
+            { "name": "merchant_phone", "type": "string", "value": "={{ $json.profiles.phone }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "send-whatsapp-handoff",
+      "name": "إرسال إشعار واتساب للتاجر",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ 60, 0 ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v19.0/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.WHATSAPP_CLOUD_API_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.merchant_phone }}\",\n  \"type\": \"text\",\n  \"text\": { \"body\": \"{{ $json.whatsapp_message }}\" }\n}",
+        "notes": "نفس متغيرات البيئة المستخدمة في سير العمل 01 (WHATSAPP_PHONE_NUMBER_ID و WHATSAPP_CLOUD_API_TOKEN)."
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: تسليم من Typebot": {
+      "main": [[ { "node": "جلب رقم هاتف صاحب المتجر", "type": "main", "index": 0 } ]]
+    },
+    "جلب رقم هاتف صاحب المتجر": {
+      "main": [[ { "node": "بناء نص الإشعار", "type": "main", "index": 0 } ]]
+    },
+    "بناء نص الإشعار": {
+      "main": [[ { "node": "إرسال إشعار واتساب للتاجر", "type": "main", "index": 0 } ]]
+    }
+  }
+}
