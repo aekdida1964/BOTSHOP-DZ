@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نموذج عقد التوريد الإلكتروني | BOTSHOP-DZ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#38BDF8; --violet:#7C3AED; --violet-deep:#4C1D95; --ink:#171335;
+    --bg:#F8F8FC; --surface:#FFFFFF; --surface-alt:#F1F0FA; --line:#E4E1F4; --muted:#5B5678;
+    --success:#16A34A; --warning:#B45309; --warning-bg:#FEF3C7;
+    --gradient: linear-gradient(135deg, var(--blue) 0%, var(--violet) 100%);
+    --radius:18px; --shadow:0 20px 50px -20px rgba(76,29,149,.25);
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:'IBM Plex Sans Arabic', sans-serif; line-height:1.75; }
+  h1,h2,h3{ font-family:'Cairo'; font-weight:800; margin:0; }
+  .num{ font-family:'Space Grotesk','IBM Plex Sans Arabic'; direction:ltr; unicode-bidi:isolate; }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; cursor:pointer; }
+  .container{ max-width:840px; margin:0 auto; padding:0 20px; }
+
+  header{ background:rgba(248,248,252,.9); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:30; }
+  .nav{ display:flex; align-items:center; justify-content:space-between; padding:14px 0; max-width:840px; margin:0 auto; padding-inline:20px; }
+  .logo{ display:flex; align-items:center; gap:10px; font-family:'Cairo'; font-weight:900; font-size:1.05rem; }
+  .logo-mark{ width:32px; height:32px; border-radius:9px; background:var(--gradient); color:#fff; display:flex; align-items:center; justify-content:center; }
+
+  .page-top{ padding:34px 0 10px; text-align:center; }
+  .page-top h1{ font-size:1.5rem; margin-bottom:8px; }
+  .page-top p{ color:var(--muted); font-size:.9rem; }
+
+  .draft-banner{
+    display:flex; gap:12px; align-items:flex-start; background:var(--warning-bg); color:var(--warning);
+    border:1px solid #FDE68A; border-radius:14px; padding:14px 16px; margin:22px 0; font-size:.85rem; font-weight:600;
+  }
+  .draft-banner .ic{ font-size:1.2rem; flex:none; }
+
+  .card{ background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:26px; margin-bottom:22px; }
+  .card h2{ font-size:1.05rem; margin-bottom:16px; display:flex; align-items:center; gap:8px; }
+  .card h2 .step-no{ width:26px; height:26px; border-radius:8px; background:var(--gradient); color:#fff; font-size:.78rem; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+
+  .field-row{ display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+  .field-group{ display:flex; flex-direction:column; gap:6px; }
+  .field-group label{ font-size:.82rem; font-weight:700; }
+  input, select, textarea{ padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:.85rem; outline:none; width:100%; }
+  input:focus, select:focus, textarea:focus{ border-color:var(--violet); box-shadow:0 0 0 3px rgba(124,58,237,.12); }
+  textarea{ resize:vertical; min-height:70px; }
+
+  .products-table{ width:100%; border-collapse:collapse; margin-top:10px; font-size:.85rem; }
+  .products-table th{ text-align:right; color:var(--muted); font-weight:600; padding:8px; border-bottom:1px solid var(--line); }
+  .products-table td{ padding:8px; border-bottom:1px solid var(--line); }
+  .products-table input{ padding:7px 9px; font-size:.8rem; }
+  .add-row-btn{ margin-top:10px; font-size:.8rem; font-weight:700; color:var(--violet-deep); background:none; border:none; }
+
+  .clause{ font-size:.88rem; color:var(--ink); margin-bottom:14px; padding-inline-start:4px; }
+  .clause b{ color:var(--violet-deep); }
+  .clause-list{ padding-inline-start:22px; margin:0; display:flex; flex-direction:column; gap:10px; }
+
+  .sign-box{ border:1.5px dashed var(--line); border-radius:14px; padding:18px; }
+  .sign-row{ display:flex; align-items:flex-start; gap:10px; margin-bottom:14px; font-size:.85rem; }
+  .sign-row input{ width:auto; margin-top:3px; }
+  .sign-meta{ display:flex; gap:20px; flex-wrap:wrap; font-size:.78rem; color:var(--muted); background:var(--surface-alt); padding:12px 14px; border-radius:10px; margin-bottom:14px; }
+  .sign-meta b{ color:var(--ink); }
+
+  .btn{ padding:13px 22px; border-radius:12px; border:none; font-weight:700; font-size:.92rem; }
+  .btn-primary{ background:var(--gradient); color:#fff; width:100%; }
+  .btn-primary[disabled]{ opacity:.5; cursor:not-allowed; }
+
+  .success-box{ display:none; text-align:center; padding:20px; }
+  .success-box.show{ display:block; }
+  .success-ic{ width:60px; height:60px; border-radius:50%; background:var(--gradient); color:#fff; font-size:1.6rem; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; }
+
+  .toast{ position:fixed; bottom:24px; left:24px; right:24px; max-width:340px; margin-inline:auto; background:var(--ink); color:#fff; padding:13px 18px; border-radius:12px; font-size:.85rem; box-shadow:var(--shadow); transform:translateY(160%); transition:transform .3s ease; z-index:100; text-align:center; }
+  .toast.show{ transform:translateY(0); }
+
+  @media print{ header, .draft-banner, .sign-box button, .btn{ display:none !important; } body{ background:#fff; } }
+  @media (max-width:640px){ .field-row{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <a href="01-landing.html" class="logo"><span class="logo-mark">ب</span> BOTSHOP-DZ</a>
+    <a href="08-contracted.html" style="font-size:.85rem; font-weight:700; color:var(--violet-deep);">← رجوع للتجار المتعاقدين</a>
+  </div>
+</header>
+
+<div class="container">
+  <div class="page-top">
+    <h1>عقد توريد إلكتروني</h1>
+    <p>بين تاجر الجملة (المورّد) والتاجر المتعاقد — وفق الشريعة الإسلامية</p>
+  </div>
+
+  <div class="draft-banner">
+    <span class="ic">⚠️</span>
+    <span>هذا النص <b>مبدئي (Draft)</b> مُعدّ كقالب أولي فقط، وينتظر <b>مراجعة مختص شرعي ومختص قانوني</b> قبل اعتماده رسمياً كعقد ملزم على المنصة، تماشياً مع التعليمات الصارمة الخاصة بهذا المشروع. لا يُستخدم بصيغته الحالية كوثيقة نهائية.</span>
+  </div>
+
+  <form id="contract-form">
+
+    <!-- 1. تعريف الطرفين -->
+    <div class="card">
+      <h2><span class="step-no">١</span> تعريف الطرفين</h2>
+      <div class="field-row">
+        <div class="field-group"><label>الطرف الأول (المورّد) — اسم المتجر</label><input type="text" id="supplier-name" required></div>
+        <div class="field-group"><label>رقم هاتف المورّد</label><input type="tel" id="supplier-phone" required></div>
+      </div>
+      <div class="field-row">
+        <div class="field-group"><label>الطرف الثاني (التاجر المتعاقد) — اسم المتجر</label><input type="text" id="contracted-name" required></div>
+        <div class="field-group"><label>رقم هاتف التاجر المتعاقد</label><input type="tel" id="contracted-phone" required></div>
+      </div>
+      <div class="clause">يُقرّ الطرفان بأنهما مستخدمان مسجّلان على منصة <b>BOTSHOP-DZ</b>، وبصحة البيانات أعلاه.</div>
+    </div>
+
+    <!-- 2. المنتجات وأسعار الجملة -->
+    <div class="card">
+      <h2><span class="step-no">٢</span> وصف المنتجات وأسعار الجملة المتفق عليها</h2>
+      <table class="products-table" id="products-table">
+        <thead><tr><th>المنتج</th><th>سعر الجملة (دج)</th><th>سعر بيع التاجر المتعاقد (دج)</th></tr></thead>
+        <tbody id="products-body">
+          <tr><td><input type="text" placeholder="اسم المنتج"></td><td><input type="number" placeholder="0"></td><td><input type="number" placeholder="0"></td></tr>
+        </tbody>
+      </table>
+      <button type="button" class="add-row-btn" id="add-product-row">+ إضافة منتج آخر</button>
+    </div>
+
+    <!-- 3. طبيعة العلاقة (وكالة بالبيع) -->
+    <div class="card">
+      <h2><span class="step-no">٣</span> طبيعة العلاقة التعاقدية</h2>
+      <ul class="clause-list">
+        <li class="clause">يُقرّ <b>التاجر المتعاقد</b> بأنه <b>وكيل بيع</b> للمورّد فيما يخص المنتجات المذكورة أعلاه، ولا يبيع ما لا يملكه فعلياً.</li>
+        <li class="clause">عند تلقّي طلب من عميل، يُحجَز المنتج المطلوب باسم التاجر المتعاقد لدى المورّد قبل شحنه للعميل، ضماناً لصحة البيع شرعاً.</li>
+        <li class="clause">يلتزم <b>المورّد</b> بشحن المنتج مرفقاً بفاتورة باسم التاجر المتعاقد.</li>
+      </ul>
+    </div>
+
+    <!-- 4. العمولة -->
+    <div class="card">
+      <h2><span class="step-no">٤</span> عمولة التاجر المتعاقد</h2>
+      <div class="field-row">
+        <div class="field-group"><label>نسبة عمولة التاجر المتعاقد عن كل عملية بيع ناجحة</label>
+          <input type="number" id="commission-rate" step="0.1" placeholder="مثال: 12%" required>
+        </div>
+        <div class="field-group"><label>طريقة تسوية العمولة</label>
+          <select id="settlement-method">
+            <option>تُخصم العمولة من المورّد عند كل عملية بيع</option>
+            <option>تُدفع العمولة دورياً (أسبوعياً/شهرياً)</option>
+          </select>
+        </div>
+      </div>
+      <div class="clause">فائدة منصة BOTSHOP-DZ من هذا العقد رسم رمزي ثابت قدره <b class="num">500</b> دج شهرياً لكل عقد نشط، منفصل تماماً عن العمولة أعلاه المتفق عليها حصرياً بين الطرفين.</div>
+    </div>
+
+    <!-- 5. الإرجاع والضمان -->
+    <div class="card">
+      <h2><span class="step-no">٥</span> أحكام الإرجاع والضمان</h2>
+      <div class="field-group">
+        <label>شروط الإرجاع والضمان المتفق عليها</label>
+        <textarea id="return-terms" placeholder="مثال: يحق للعميل إرجاع المنتج خلال 7 أيام من الاستلام في حال وجود عيب مصنعي، ويتحمّل المورّد كلفة الإرجاع في هذه الحالة..."></textarea>
+      </div>
+    </div>
+
+    <!-- 6. حل النزاعات ومدة العقد -->
+    <div class="card">
+      <h2><span class="step-no">٦</span> حل النزاعات ومدة العقد</h2>
+      <div class="field-row">
+        <div class="field-group"><label>مدة العقد</label>
+          <select id="contract-duration">
+            <option>غير محدد (قابل للإنهاء بإشعار من أي طرف)</option>
+            <option>3 أشهر قابلة للتجديد</option>
+            <option>6 أشهر قابلة للتجديد</option>
+            <option>سنة كاملة قابلة للتجديد</option>
+          </select>
+        </div>
+        <div class="field-group"><label>آلية حل النزاعات</label>
+          <select id="dispute-method">
+            <option>التراضي المباشر بين الطرفين أولاً</option>
+            <option>التحكيم عبر لجنة وساطة تابعة للمنصة</option>
+          </select>
+        </div>
+      </div>
+      <div class="clause">في حال تعذّر حل أي نزاع بالتراضي، يُحتكم الطرفان لأحكام الشريعة الإسلامية والتشريع الجزائري النافذ.</div>
+    </div>
+
+    <!-- 7. التوقيع الرقمي -->
+    <div class="card">
+      <h2><span class="step-no">٧</span> التوقيع الرقمي</h2>
+      <div class="sign-box">
+        <div class="sign-meta">
+          <span>📅 التاريخ: <b id="sign-date">—</b></span>
+          <span>🌐 عنوان IP: <b id="sign-ip">يُسجَّل تلقائياً من الخادم عند الإرسال الفعلي</b></span>
+        </div>
+        <div class="sign-row">
+          <input type="checkbox" id="sign-supplier" required>
+          <label for="sign-supplier">يوافق <b>الطرف الأول (المورّد)</b> على جميع بنود هذا العقد كما وردت أعلاه.</label>
+        </div>
+        <div class="sign-row">
+          <input type="checkbox" id="sign-contracted" required>
+          <label for="sign-contracted">يوافق <b>الطرف الثاني (التاجر المتعاقد)</b> على جميع بنود هذا العقد كما وردت أعلاه.</label>
+        </div>
+        <button type="submit" class="btn btn-primary" id="submit-btn">توقيع العقد وإرساله للتفعيل</button>
+      </div>
+    </div>
+
+  </form>
+
+  <div class="card success-box" id="success-box">
+    <div class="success-ic">✓</div>
+    <h2 style="margin-bottom:8px;">تم توثيق العقد بنجاح</h2>
+    <p style="color:var(--muted); font-size:.9rem;">سيُفعَّل العقد فور تأكيد الطرف الآخر توقيعه. رقم العقد: <b class="num" id="contract-id"></b></p>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  document.getElementById('sign-date').textContent = new Date().toLocaleDateString('ar-DZ', { year:'numeric', month:'long', day:'numeric' });
+
+  document.getElementById('add-product-row').addEventListener('click', ()=>{
+    const row = document.createElement('tr');
+    row.innerHTML = `<td><input type="text" placeholder="اسم المنتج"></td><td><input type="number" placeholder="0"></td><td><input type="number" placeholder="0"></td>`;
+    document.getElementById('products-body').appendChild(row);
+  });
+
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 3000);
+  }
+
+  document.getElementById('contract-form').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const form = e.target;
+    if(!form.checkValidity()){ form.reportValidity(); return; }
+    if(!document.getElementById('sign-supplier').checked || !document.getElementById('sign-contracted').checked){
+      showToast('يجب موافقة الطرفين معاً لإتمام التوقيع'); return;
+    }
+    const id = 'CNT-' + Math.floor(10000 + Math.random()*89999);
+    document.getElementById('contract-id').textContent = id;
+    form.style.display = 'none';
+    document.getElementById('success-box').classList.add('show');
+  });
+</script>
+
+</body>
+</html>
