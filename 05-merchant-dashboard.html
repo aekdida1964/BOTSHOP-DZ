@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة تحكم التاجر | BOTSHOP-DZ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<style>
+  :root{
+    --blue:#38BDF8; --violet:#7C3AED; --violet-deep:#4C1D95; --ink:#171335;
+    --bg:#F8F8FC; --surface:#FFFFFF; --surface-alt:#F1F0FA; --line:#E4E1F4; --muted:#5B5678;
+    --success:#16A34A; --warning:#D97706; --danger:#DC2626;
+    --green-bg:#E8F8EE; --orange-bg:#FFF4E5; --red-bg:#FDE8E8;
+    --gradient: linear-gradient(135deg, var(--blue) 0%, var(--violet) 100%);
+    --radius:16px; --shadow:0 16px 40px -20px rgba(76,29,149,.25);
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:'IBM Plex Sans Arabic', sans-serif; line-height:1.6; }
+  h1,h2,h3,.display{ font-family:'Cairo'; font-weight:800; margin:0; }
+  .num{ font-family:'Space Grotesk','IBM Plex Sans Arabic'; direction:ltr; unicode-bidi:isolate; }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; cursor:pointer; }
+
+  .app{ display:grid; grid-template-columns:250px 1fr; min-height:100vh; }
+  .sidebar{ background:#fff; border-left:1px solid var(--line); padding:22px 16px; display:flex; flex-direction:column; }
+  .logo{ display:flex; align-items:center; gap:10px; font-family:'Cairo'; font-weight:900; font-size:1.05rem; padding:0 8px 18px; }
+  .logo-mark{ width:32px; height:32px; border-radius:9px; background:var(--gradient); display:flex; align-items:center; justify-content:center; color:#fff; }
+  .store-switcher{ margin:0 4px 18px; padding:10px 12px; background:var(--surface-alt); border-radius:12px; }
+  .store-switcher label{ font-size:.68rem; color:var(--muted); font-weight:700; display:block; margin-bottom:6px; }
+  .store-switcher select{ width:100%; border:1px solid var(--line); border-radius:8px; padding:6px 8px; font-family:inherit; font-size:.78rem; background:#fff; }
+  .nav-item{ display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:12px; font-size:.88rem; font-weight:600; color:var(--muted); border:none; background:none; width:100%; text-align:right; margin-bottom:2px; }
+  .nav-item:hover{ background:var(--surface-alt); color:var(--ink); }
+  .nav-item.active{ background:rgba(124,58,237,.08); color:var(--violet-deep); }
+  .nav-item .ic{ width:20px; text-align:center; }
+  .nav-item[hidden]{ display:none; }
+  .sidebar-foot{ margin-top:auto; display:flex; align-items:center; gap:10px; padding:12px; border-radius:12px; background:var(--surface-alt); }
+  .avatar{ width:34px; height:34px; border-radius:50%; background:var(--gradient); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; flex:none; }
+  .sidebar-foot small{ color:var(--muted); display:block; font-size:.7rem; }
+
+  .main{ padding:24px 28px 60px; max-width:1240px; }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; gap:14px; flex-wrap:wrap; }
+  .topbar h1{ font-size:1.45rem; }
+  .plan-pill{ display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--line); padding:8px 14px; border-radius:999px; font-size:.82rem; font-weight:700; }
+  .plan-pill .dot{ width:8px; height:8px; border-radius:50%; background:var(--violet); }
+
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+
+  .kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:24px; }
+  .kpi-card{ background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:18px; }
+  .kpi-card .ic{ width:36px; height:36px; border-radius:10px; background:var(--gradient); color:#fff; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+  .kpi-card .value{ font-size:1.5rem; font-weight:700; }
+  .kpi-card .label{ color:var(--muted); font-size:.8rem; margin-top:2px; }
+  .progress-track{ height:6px; background:var(--surface-alt); border-radius:999px; overflow:hidden; margin-top:10px; }
+  .progress-fill{ height:100%; background:var(--gradient); border-radius:999px; }
+
+  .card{ background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:22px; margin-bottom:22px; }
+  .card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .card-head h3{ font-size:1.02rem; }
+  .card-head .note{ font-size:.74rem; color:var(--muted); background:var(--surface-alt); padding:4px 10px; border-radius:999px; }
+
+  table{ width:100%; border-collapse:collapse; font-size:.84rem; }
+  thead th{ text-align:right; color:var(--muted); font-weight:600; padding:10px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  tbody td{ padding:12px 8px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  tbody tr:last-child td{ border-bottom:none; }
+  .table-wrap{ overflow-x:auto; }
+
+  .badge{ display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:999px; font-size:.72rem; font-weight:700; }
+  .badge.processing{ background:var(--orange-bg); color:var(--warning); }
+  .badge.confirmed{ background:#EFF6FF; color:#1D4ED8; }
+  .badge.shipped{ background:#F5F0FF; color:var(--violet-deep); }
+  .badge.delivered{ background:var(--green-bg); color:var(--success); }
+  .badge.returned{ background:var(--red-bg); color:var(--danger); }
+  .badge.cancelled{ background:var(--surface-alt); color:var(--muted); }
+  .badge.green{ background:var(--green-bg); color:var(--success); }
+  .badge.orange{ background:var(--orange-bg); color:var(--warning); }
+  .badge.red{ background:var(--red-bg); color:var(--danger); }
+
+  .status-select{ padding:6px 8px; border-radius:8px; border:1px solid var(--line); font-family:inherit; font-size:.78rem; background:#fff; }
+
+  .btn{ padding:10px 16px; border-radius:10px; border:none; font-weight:700; font-size:.85rem; }
+  .btn-primary{ background:var(--gradient); color:#fff; }
+  .btn-ghost{ background:var(--surface-alt); color:var(--ink); }
+  .btn-outline{ background:#fff; border:1.5px solid var(--line); color:var(--ink); }
+  .btn:hover{ opacity:.92; }
+
+  /* المنتجات */
+  .products-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; }
+  .product-card{ border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+  .product-media{ height:110px; background:linear-gradient(135deg,var(--blue),var(--violet)); display:flex; align-items:center; justify-content:center; font-size:1.8rem; }
+  .product-info{ padding:12px; }
+  .product-info b{ font-size:.85rem; display:block; margin-bottom:4px; }
+  .product-info .num{ color:var(--violet-deep); font-weight:700; }
+  .product-info .row-actions{ display:flex; gap:6px; margin-top:10px; }
+  .icon-btn{ width:28px; height:28px; border-radius:8px; border:1px solid var(--line); background:#fff; font-size:.78rem; display:flex; align-items:center; justify-content:center; }
+  .add-product-card{ border:1.5px dashed var(--line); border-radius:14px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; color:var(--muted); font-weight:700; font-size:.85rem; min-height:190px; background:none; cursor:pointer; }
+  .add-product-card:hover{ border-color:var(--violet); color:var(--violet-deep); }
+
+  /* بحث القائمة السوداء */
+  .blacklist-check{ display:flex; gap:10px; margin-bottom:14px; }
+  .blacklist-check input{ flex:1; padding:11px 13px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:.85rem; }
+  .bl-result{ display:none; align-items:center; gap:10px; padding:12px 14px; border-radius:12px; font-size:.85rem; font-weight:700; }
+  .bl-result.show{ display:flex; }
+  .bl-result.green{ background:var(--green-bg); color:var(--success); }
+  .bl-result.orange{ background:var(--orange-bg); color:var(--warning); }
+  .bl-result.red{ background:var(--red-bg); color:var(--danger); }
+  .bl-locked{ text-align:center; padding:36px 20px; color:var(--muted); }
+  .bl-locked .ic{ font-size:1.8rem; margin-bottom:10px; }
+
+  /* الإحالة */
+  .referral-code-box{ display:flex; align-items:center; gap:12px; background:var(--surface-alt); padding:16px; border-radius:14px; margin-bottom:18px; }
+  .referral-code-box .code{ font-family:'Space Grotesk'; font-weight:700; font-size:1.2rem; letter-spacing:.05em; direction:ltr; }
+  .referral-code-box small{ display:block; color:var(--muted); font-size:.75rem; }
+
+  /* العقود */
+  .contract-card{ border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:12px; }
+  .contract-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .contract-head b{ font-size:.9rem; }
+  .contract-terms{ font-size:.8rem; color:var(--muted); background:var(--surface-alt); padding:10px 12px; border-radius:10px; margin-top:8px; max-height:80px; overflow-y:auto; }
+
+  /* الاشتراك */
+  .plan-compare{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .plan-compare .p-card{ border:1.5px solid var(--line); border-radius:14px; padding:16px; text-align:center; }
+  .plan-compare .p-card.current{ border-color:var(--violet); background:rgba(124,58,237,.05); }
+  .plan-compare .p-card h4{ font-size:.92rem; margin-bottom:8px; }
+  .plan-compare .p-card .num{ font-size:1.3rem; font-weight:700; }
+  .plan-compare .p-card ul{ list-style:none; padding:0; margin:12px 0; font-size:.76rem; color:var(--muted); text-align:right; display:flex; flex-direction:column; gap:6px; }
+  .balance-box{ display:flex; align-items:center; justify-content:space-between; background:var(--gradient); color:#fff; padding:18px 20px; border-radius:16px; margin-bottom:20px; }
+  .balance-box .amount{ font-size:1.6rem; font-weight:700; }
+  .balance-box small{ opacity:.9; display:block; font-size:.75rem; }
+
+  /* نموذج إضافة منتج */
+  .modal{ position:fixed; inset:0; z-index:90; display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .25s ease; padding:20px; background:rgba(23,19,53,.35); }
+  .modal.show{ opacity:1; pointer-events:auto; }
+  .modal-box{ background:#fff; border-radius:20px; width:100%; max-width:440px; padding:24px; }
+  .modal-box h3{ font-size:1.1rem; margin-bottom:16px; }
+  .field-group{ display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+  .field-group label{ font-size:.82rem; font-weight:700; }
+  .field-group .hint{ font-size:.72rem; color:var(--muted); font-weight:400; }
+  input, select, textarea{ padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; font-size:.85rem; outline:none; width:100%; }
+  input:focus, select:focus, textarea:focus{ border-color:var(--violet); box-shadow:0 0 0 3px rgba(124,58,237,.12); }
+  .modal-actions{ display:flex; gap:10px; margin-top:6px; }
+  .modal-actions .btn{ flex:1; }
+
+  .toast{ position:fixed; bottom:24px; left:24px; background:var(--ink); color:#fff; padding:13px 18px; border-radius:12px; font-size:.85rem; box-shadow:var(--shadow); transform:translateY(120%); transition:transform .3s ease; z-index:100; }
+  .toast.show{ transform:translateY(0); }
+
+  @media (max-width:1000px){
+    .app{ grid-template-columns:1fr; }
+    .sidebar{ display:none; }
+    .kpi-grid{ grid-template-columns:repeat(2,1fr); }
+    .products-grid{ grid-template-columns:repeat(2,1fr); }
+    .plan-compare{ grid-template-columns:repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo"><span class="logo-mark">ب</span> BOTSHOP-DZ</div>
+
+    <div class="store-switcher">
+      <label>نوع متجرك</label>
+      <select id="store-type-switch" disabled>
+        <option value="retailer">تاجر تجزئة</option>
+        <option value="supplier">تاجر جملة (مورّد)</option>
+        <option value="contracted">تاجر متعاقد</option>
+      </select>
+    </div>
+
+    <button class="nav-item active" data-panel="overview"><span class="ic">📊</span> نظرة عامة</button>
+    <button class="nav-item" data-panel="products" id="nav-products"><span class="ic">📦</span> المنتجات</button>
+    <button class="nav-item" data-panel="orders"><span class="ic">🧾</span> الطلبات</button>
+    <button class="nav-item" data-panel="returns"><span class="ic">↩️</span> المرتجعات</button>
+    <button class="nav-item" data-panel="blacklist"><span class="ic">🛡️</span> القائمة السوداء</button>
+    <button class="nav-item" data-panel="contracts" id="nav-contracts"><span class="ic">📜</span> العقود</button>
+    <button class="nav-item" data-panel="referrals"><span class="ic">🤝</span> الإحالات</button>
+    <button class="nav-item" data-panel="subscription"><span class="ic">💳</span> الاشتراك والخطة</button>
+    <button class="nav-item" data-panel="settings"><span class="ic">⚙️</span> إعدادات المتجر</button>
+
+    <div class="sidebar-foot">
+      <div class="avatar" id="merchant-avatar">أ</div>
+      <div><b style="font-size:.82rem;" id="merchant-name">—</b><small id="side-role-label">—</small></div>
+    </div>
+    <button class="nav-item" style="margin-top:8px; color:var(--danger);" onclick="signOutAndRedirect()"><span class="ic">🚪</span> تسجيل الخروج</button>
+  </aside>
+
+  <main class="main">
+
+    <!-- ============ نظرة عامة ============ -->
+    <section class="panel active" id="panel-overview">
+      <div class="topbar">
+        <h1>مرحباً، أمين 👋</h1>
+        <div class="plan-pill"><span class="dot"></span> الخطة الاحترافية</div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="ic">🧾</div>
+          <div class="value num">212 / 300</div>
+          <div class="label">الطلبات المستخدمة هذا الشهر</div>
+          <div class="progress-track"><div class="progress-fill" style="width:70%"></div></div>
+        </div>
+        <div class="kpi-card">
+          <div class="ic">💰</div>
+          <div class="value num">1,450 دج</div>
+          <div class="label">الرصيد الداخلي (ترقية/تجديد)</div>
+        </div>
+        <div class="kpi-card">
+          <div class="ic">↩️</div>
+          <div class="value num">6 / 25</div>
+          <div class="label">مرتجعات مدعومة هذا الاشتراك</div>
+        </div>
+        <div class="kpi-card">
+          <div class="ic">🤝</div>
+          <div class="value num">3</div>
+          <div class="label">تجار أحلتهم واشتركوا</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>أحدث الطلبات</h3><button class="btn btn-ghost" onclick="switchPanel('orders')">عرض الكل ←</button></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>رقم الطلب</th><th>العميل</th><th>المبلغ</th><th>الدفع</th><th>الحالة</th></tr></thead>
+          <tbody id="overview-orders-body"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- ============ المنتجات ============ -->
+    <section class="panel" id="panel-products">
+      <div class="topbar"><h1>المنتجات</h1><button class="btn btn-primary" id="open-add-product">+ إضافة منتج</button></div>
+      <div class="card" style="padding:14px 18px;">
+        <span style="font-size:.8rem; color:var(--muted);">💡 يمكن رفع حتى 3 صور مضغوطة لكل منتج، وفيديو واحد اختياري (15–25 ثانية) للمتجر بالكامل، للحفاظ على سرعة التحميل.</span>
+      </div>
+      <div class="products-grid" id="products-grid"></div>
+    </section>
+
+    <!-- ============ الطلبات ============ -->
+    <section class="panel" id="panel-orders">
+      <div class="topbar"><h1>الطلبات</h1></div>
+      <div class="card">
+        <div class="table-wrap"><table>
+          <thead><tr><th>رقم الطلب</th><th>العميل</th><th>المنتج</th><th>المبلغ</th><th>الدفع</th><th>التوصيل</th><th>الحالة</th></tr></thead>
+          <tbody id="orders-body"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- ============ المرتجعات ============ -->
+    <section class="panel" id="panel-returns">
+      <div class="topbar"><h1>المرتجعات</h1><button class="btn btn-primary" id="open-log-return">+ توثيق مرتجع</button></div>
+      <div class="card" style="padding:14px 18px;">
+        <span style="font-size:.8rem; color:var(--muted);">مساعدتك الحالية: <b class="num">40%</b> من كلفة توصيل المرتجع، ضمن سقف <b class="num">25</b> مرتجعاً لهذا الاشتراك (الخطة الاحترافية).</span>
+      </div>
+      <div class="card">
+        <div class="table-wrap"><table>
+          <thead><tr><th>رقم الطلب</th><th>كلفة توصيل الإرجاع</th><th>نسبة المساعدة</th><th>المساعدة المضافة</th><th>الحالة</th></tr></thead>
+          <tbody id="returns-body"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- ============ القائمة السوداء ============ -->
+    <section class="panel" id="panel-blacklist">
+      <div class="topbar"><h1>القائمة السوداء المشتركة</h1></div>
+      <div class="card" id="blacklist-unlocked">
+        <div class="card-head"><h3>تحقق من عميل قبل قبول الطلب</h3><span class="note">أخضر &lt; 3 · برتقالي &lt; 5 · أحمر ≥ 5</span></div>
+        <div class="blacklist-check">
+          <input type="tel" id="bl-phone-input" placeholder="أدخل رقم هاتف العميل (05XXXXXXXX)">
+          <button class="btn btn-primary" id="bl-check-btn">تحقق</button>
+        </div>
+        <div class="bl-result" id="bl-result"></div>
+      </div>
+      <div class="card" id="blacklist-locked" style="display:none;">
+        <div class="bl-locked"><div class="ic">🔒</div>القائمة السوداء متاحة فقط لخطتي الاحترافية والمؤسساتية.<br><button class="btn btn-primary" style="margin-top:14px;" onclick="switchPanel('subscription')">ترقية الخطة</button></div>
+      </div>
+    </section>
+
+    <!-- ============ العقود ============ -->
+    <section class="panel" id="panel-contracts">
+      <div class="topbar"><h1 id="contracts-title">عقود التوريد</h1><button class="btn btn-primary" id="open-add-contract">+ عقد جديد</button></div>
+      <div class="card" id="contracts-list"></div>
+    </section>
+
+    <!-- ============ الإحالات ============ -->
+    <section class="panel" id="panel-referrals">
+      <div class="topbar"><h1>الإحالات</h1></div>
+      <div class="referral-code-box">
+        <div>👥</div>
+        <div>
+          <span class="code" id="ref-code">AMIN2026</span>
+          <small>شارك هذا الكود مع تجار آخرين — تحصل على 500 دج رصيداً داخلياً عن كل تاجر يشترك في خطة مدفوعة</small>
+        </div>
+        <button class="btn btn-outline" style="margin-right:auto;" onclick="copyRefCode()">نسخ الكود</button>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>التجار الذين أحلتهم</h3></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>التاجر</th><th>الحالة</th><th>المكافأة</th></tr></thead>
+          <tbody id="merchant-referrals-body"></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>خصومات إحالة العملاء المُصدرة</h3></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>الكود</th><th>القيمة</th><th>الحالة</th></tr></thead>
+          <tbody id="customer-referrals-body"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- ============ الاشتراك والخطة ============ -->
+    <section class="panel" id="panel-subscription">
+      <div class="topbar"><h1>الاشتراك والخطة</h1></div>
+      <div class="balance-box">
+        <div><div class="amount num">1,450 دج</div><small>رصيدك الداخلي — يُستعمل للترقية أو التجديد فقط</small></div>
+        <button class="btn" style="background:#fff; color:var(--violet-deep);">استعمل الرصيد الآن</button>
+      </div>
+      <div class="plan-compare">
+        <div class="p-card"><h4>المجانية</h4><div class="num">0 دج</div><ul><li>10 طلبات مدى الحياة</li><li>عمولة 35 دج + 3%</li></ul><button class="btn btn-ghost" style="width:100%;" disabled>الخطة الحالية سابقاً</button></div>
+        <div class="p-card"><h4>الأساسية</h4><div class="num">2000 دج</div><ul><li>150 طلب/الشهر</li><li>عمولة 20 دج + 1.5%</li></ul><button class="btn btn-ghost" style="width:100%;">تخفيض للأساسية</button></div>
+        <div class="p-card current"><h4>الاحترافية ✓</h4><div class="num">5000 دج</div><ul><li>300 طلب/الشهر</li><li>عمولة 12 دج + 0.8%</li><li>القائمة السوداء</li></ul><button class="btn btn-primary" style="width:100%;" disabled>خطتك الحالية</button></div>
+        <div class="p-card"><h4>المؤسساتية</h4><div class="num">8500 دج</div><ul><li>طلبات غير محدودة</li><li>عمولة 6 دج + 0.3%</li><li>مساعدة فورية</li></ul><button class="btn btn-primary" style="width:100%;">ترقية الآن</button></div>
+      </div>
+    </section>
+
+    <!-- ============ إعدادات المتجر ============ -->
+    <section class="panel" id="panel-settings">
+      <div class="topbar"><h1>إعدادات المتجر</h1></div>
+      <div class="card">
+        <div class="field-group"><label>اسم المتجر</label><input type="text" value="متجر أمين للأحذية"></div>
+        <div class="field-group"><label>الولاية</label><input type="text" value="الجزائر العاصمة"></div>
+        <div class="field-group"><label>رابط فيديو المتجر (اختياري، 15–25 ثانية)</label><input type="text" placeholder="رابط الفيديو من Supabase Storage"></div>
+        <button class="btn btn-primary">حفظ التعديلات</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- نافذة إضافة منتج -->
+<div class="modal" id="product-modal">
+  <div class="modal-box">
+    <h3>إضافة منتج جديد</h3>
+    <form id="product-form">
+      <div class="field-group"><label>اسم المنتج</label><input type="text" required></div>
+      <div class="field-group"><label>السعر (دج)</label><input type="number" required></div>
+      <div class="field-group"><label>الكمية المتوفرة</label><input type="number" required></div>
+      <div class="field-group"><label>الصور</label><input type="file" accept="image/*" multiple><span class="hint">حتى 3 صور مضغوطة كحد أقصى</span></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('product-modal')">إلغاء</button>
+        <button type="submit" class="btn btn-primary">حفظ المنتج</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة توثيق مرتجع -->
+<div class="modal" id="return-modal">
+  <div class="modal-box">
+    <h3>توثيق مرتجع</h3>
+    <form id="return-form">
+      <div class="field-group"><label>رقم الطلب</label><input type="text" required></div>
+      <div class="field-group"><label>كلفة توصيل الإرجاع (دج)</label><input type="number" id="return-cost" required></div>
+      <div class="field-group"><label class="hint">المساعدة المتوقعة: <b class="num" id="return-preview">0 دج</b> (40% ضمن سقف خطتك)</label></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('return-modal')">إلغاء</button>
+        <button type="submit" class="btn btn-primary">توثيق</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- نافذة عقد جديد -->
+<div class="modal" id="contract-modal">
+  <div class="modal-box">
+    <h3 id="contract-modal-title">عقد توريد جديد</h3>
+    <form id="contract-form">
+      <div class="field-group"><label id="contract-party-label">التاجر المتعاقد</label><input type="text" required></div>
+      <div class="field-group"><label>العمولة المتفق عليها (%) — تحددها بحرية</label><input type="number" step="0.1" required></div>
+      <div class="field-group"><label class="hint">فائدة المنصة من هذا العقد: <b class="num">500</b> دج/الشهر (رسم رمزي ثابت)</label></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" onclick="closeModal('contract-modal')">إلغاء</button>
+        <button type="submit" class="btn btn-primary">إرسال للتوقيع</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ==========================================================================
+  // حارس الصلاحية — يسمح فقط لأدوار supplier / retailer / contracted، وإلا يُعاد التوجيه
+  // ==========================================================================
+  let currentProfile = null;
+  (async ()=>{
+    const auth = await requireAuth(['supplier','retailer','contracted']);
+    if(!auth) return;
+    currentProfile = auth.profile;
+    document.getElementById('merchant-name').textContent = auth.profile.store_name || auth.profile.full_name;
+    document.getElementById('merchant-avatar').textContent = (auth.profile.store_name || auth.profile.full_name)[0];
+    applyStoreType(auth.profile.role); // يُضبط تلقائياً من الحساب الحقيقي، وليس يدوياً
+    document.getElementById('store-type-switch').value = auth.profile.role;
+  })();
+
+  // ==========================================================================
+  // بيانات تجريبية لعرض الواجهة فقط — تُستبدل لاحقاً باستعلامات Supabase الحقيقية
+  // مرتبطة بمعرّف المتجر الحالي (store_id) بعد ربط المصادقة
+  // ==========================================================================
+  const ordersData = [
+    { id:'ORD-10432', customer:'ياسين ب.', product:'حذاء رياضي أحمر', amount:4200, pay:'الدفع عند الاستلام', delivery:'Yalidine', status:'delivered' },
+    { id:'ORD-10444', customer:'سارة م.', product:'بوت شتوي', amount:7200, pay:'BaridiMob', delivery:'Z Express', status:'shipped' },
+    { id:'ORD-10451', customer:'كريم ز.', product:'حذاء كلاسيكي', amount:6800, pay:'CIB', delivery:'—', status:'processing' },
+    { id:'ORD-10399', customer:'أمينة ح.', product:'صندل صيفي', amount:2200, pay:'CCP', delivery:'K Express', status:'returned' },
+  ];
+  const statusLabel = { processing:'قيد المعالجة', confirmed:'مؤكد', shipped:'تم الشحن', delivered:'تم التسليم', returned:'مرتجع', cancelled:'ملغى' };
+
+  const productsData = [
+    { name:'حذاء رياضي أحمر', price:4200, stock:12, icon:'👟' },
+    { name:'حذاء كلاسيكي جلد', price:6800, stock:5, icon:'👞' },
+    { name:'بوت شتوي', price:7200, stock:3, icon:'🥾' },
+    { name:'صندل صيفي', price:2200, stock:8, icon:'🩴' },
+  ];
+
+  const returnsData = [
+    { orderId:'ORD-10399', cost:400, pct:40, refund:160, status:'مضافة للرصيد' },
+    { orderId:'ORD-10288', cost:350, pct:40, refund:140, status:'مضافة للرصيد' },
+  ];
+
+  const merchantReferrals = [
+    { name:'بوتيك سارة', status:'اشترك في الخطة الأساسية', bonus:'500 دج' },
+    { name:'مخزن الشرق', status:'بانتظار أول اشتراك مدفوع', bonus:'—' },
+  ];
+  const customerReferrals = [
+    { code:'FRIEND100', value:'100 دج', status:'مستعمل' },
+    { code:'FRIEND200', value:'200 دج', status:'بانتظار الاستعمال' },
+  ];
+
+  const blacklistDB = {
+    '0551000012': 1, '0662000045': 2, '0770000088': 4, '0556000023': 6, '0698000009': 3
+  };
+
+  const supplierContracts = [
+    { party:'بوتيك سارة (متعاقد)', commission:'12%', status:'نشط', fee:500, terms:'يقرّ التاجر المتعاقد بأنه وكيل بيع للمورّد، ولا يبيع ما لا يملكه، ويُحجز المنتج باسمه لدى المورّد قبل شحنه للعميل...' },
+  ];
+  const contractedContracts = [
+    { party:'مؤسسة الوادي للجملة (مورّد)', commission:'15%', status:'نشط', fee:500, terms:'يلتزم المورّد بشحن المنتج بفاتورة باسم التاجر المتعاقد حتى يكون البيع صحيحاً شرعاً...' },
+  ];
+
+  // ---------- التنقل ----------
+  function switchPanel(id){
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('panel-'+id).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.panel===id));
+  }
+  document.querySelectorAll('.nav-item[data-panel]').forEach(item=>{
+    item.addEventListener('click', ()=> switchPanel(item.dataset.panel));
+  });
+
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2800);
+  }
+  function openModal(id){ document.getElementById(id).classList.add('show'); }
+  function closeModal(id){ document.getElementById(id).classList.remove('show'); }
+
+  // ---------- تبديل نوع المتجر (عرض تجريبي لتغيير الأقسام الظاهرة) ----------
+  const roleLabels = { retailer:'تاجر تجزئة', supplier:'تاجر جملة (مورّد)', contracted:'تاجر متعاقد' };
+  document.getElementById('store-type-switch').addEventListener('change', (e)=>{
+    applyStoreType(e.target.value);
+  });
+  function applyStoreType(type){
+    document.getElementById('side-role-label').textContent = roleLabels[type];
+    // المنتجات: متاحة للمورّد والتجزئة، أما المتعاقد فيعرض منتجات المورّد بأسعاره الخاصة
+    document.getElementById('nav-products').querySelector('.ic').nextSibling.textContent =
+      type === 'contracted' ? ' منتجات المورّد' : ' المنتجات';
+    // العقود
+    document.getElementById('contracts-title').textContent = type === 'supplier' ? 'عقود التوريد الموقعة' : (type === 'contracted' ? 'عقدي مع المورّد' : 'العقود');
+    document.getElementById('nav-contracts').hidden = (type === 'retailer');
+    document.getElementById('contract-party-label').textContent = type === 'supplier' ? 'التاجر المتعاقد' : 'المورّد';
+    renderContracts(type);
+  }
+
+  // ---------- نظرة عامة: أحدث الطلبات ----------
+  function renderOverviewOrders(){
+    document.getElementById('overview-orders-body').innerHTML = ordersData.slice(0,4).map(o=>`
+      <tr><td class="num">${o.id}</td><td>${o.customer}</td><td class="num">${o.amount.toLocaleString('en-US')} دج</td><td>${o.pay}</td><td><span class="badge ${o.status}">${statusLabel[o.status]}</span></td></tr>
+    `).join('');
+  }
+
+  // ---------- الطلبات ----------
+  function renderOrders(){
+    document.getElementById('orders-body').innerHTML = ordersData.map((o,i)=>`
+      <tr>
+        <td class="num">${o.id}</td><td>${o.customer}</td><td>${o.product}</td>
+        <td class="num">${o.amount.toLocaleString('en-US')} دج</td><td>${o.pay}</td><td>${o.delivery}</td>
+        <td><select class="status-select" onchange="updateStatus(${i}, this.value)">
+          ${Object.entries(statusLabel).map(([k,v])=>`<option value="${k}" ${k===o.status?'selected':''}>${v}</option>`).join('')}
+        </select></td>
+      </tr>`).join('');
+  }
+  function updateStatus(i, val){
+    ordersData[i].status = val;
+    showToast(`تم تحديث حالة الطلب ${ordersData[i].id} إلى "${statusLabel[val]}"`);
+    renderOverviewOrders();
+  }
+
+  // ---------- المنتجات ----------
+  function renderProducts(){
+    const grid = document.getElementById('products-grid');
+    grid.innerHTML = productsData.map(p=>`
+      <div class="product-card">
+        <div class="product-media">${p.icon}</div>
+        <div class="product-info">
+          <b>${p.name}</b>
+          <span class="num">${p.price.toLocaleString('en-US')} دج · مخزون ${p.stock}</span>
+          <div class="row-actions"><button class="icon-btn" onclick="showToast('تعديل ${p.name}')">✏️</button><button class="icon-btn" onclick="showToast('حذف ${p.name}')">🗑️</button></div>
+        </div>
+      </div>`).join('') + `<button class="add-product-card" id="add-product-inline">+<br>إضافة منتج</button>`;
+    document.getElementById('add-product-inline').addEventListener('click', ()=>openModal('product-modal'));
+  }
+  document.getElementById('open-add-product').addEventListener('click', ()=>openModal('product-modal'));
+  document.getElementById('product-form').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    showToast('تم حفظ المنتج (تجريبي — بانتظار ربط Supabase Storage)');
+    closeModal('product-modal');
+  });
+
+  // ---------- المرتجعات ----------
+  function renderReturns(){
+    document.getElementById('returns-body').innerHTML = returnsData.map(r=>`
+      <tr><td class="num">${r.orderId}</td><td class="num">${r.cost} دج</td><td class="num">${r.pct}%</td><td class="num">${r.refund} دج</td><td><span class="badge green">${r.status}</span></td></tr>
+    `).join('');
+  }
+  document.getElementById('open-log-return').addEventListener('click', ()=>openModal('return-modal'));
+  document.getElementById('return-cost').addEventListener('input', (e)=>{
+    const preview = Math.round((Number(e.target.value)||0) * 0.4);
+    document.getElementById('return-preview').textContent = preview.toLocaleString('en-US') + ' دج';
+  });
+  document.getElementById('return-form').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    showToast('تم توثيق المرتجع وإضافة المساعدة إلى رصيدك (تجريبي)');
+    closeModal('return-modal');
+  });
+
+  // ---------- القائمة السوداء ----------
+  function blColor(n){ return n >= 5 ? 'red' : (n < 3 ? 'green' : 'orange'); }
+  function blLabel(n){ return n >= 5 ? '🔴 أحمر — يحق لك رفض الطلب أو طلب دفع التوصيل مسبقاً' : (n < 3 ? '🟢 أخضر — عميل بلا سجل مرتجعات ملحوظ' : '🟠 برتقالي — يُنصح بمراجعة الطلب قبل التأكيد'); }
+  document.getElementById('bl-check-btn').addEventListener('click', ()=>{
+    const phone = document.getElementById('bl-phone-input').value.trim();
+    const box = document.getElementById('bl-result');
+    if(!phone){ showToast('أدخل رقم هاتف للتحقق'); return; }
+    const returns = blacklistDB[phone] ?? 0;
+    const color = blColor(returns);
+    box.className = 'bl-result show ' + color;
+    box.innerHTML = `${blLabel(returns)} <span class="num" style="margin-right:auto;">${returns} مرتجعات</span>`;
+  });
+
+  // ---------- العقود ----------
+  function renderContracts(type){
+    const list = document.getElementById('contracts-list');
+    if(type === 'retailer'){
+      list.innerHTML = `<div class="bl-locked"><div class="ic">📜</div>العقود متاحة فقط لتجار الجملة (الموردين) والتجار المتعاقدين.</div>`;
+      return;
+    }
+    const data = type === 'supplier' ? supplierContracts : contractedContracts;
+    list.innerHTML = data.map(c=>`
+      <div class="contract-card">
+        <div class="contract-head"><b>${c.party}</b><span class="badge green">${c.status}</span></div>
+        <div style="font-size:.82rem; color:var(--muted);">العمولة المتفق عليها: <b class="num">${c.commission}</b> · رسم المنصة: <b class="num">${c.fee}</b> دج/الشهر</div>
+        <div class="contract-terms">${c.terms}</div>
+      </div>`).join('');
+  }
+  document.getElementById('open-add-contract').addEventListener('click', ()=>openModal('contract-modal'));
+  document.getElementById('contract-form').addEventListener('submit', (e)=>{
+    e.preventDefault();
+    showToast('تم إرسال العقد للطرف الآخر للتوقيع الرقمي (تجريبي)');
+    closeModal('contract-modal');
+  });
+
+  // ---------- الإحالات ----------
+  function renderReferrals(){
+    document.getElementById('merchant-referrals-body').innerHTML = merchantReferrals.map(r=>`
+      <tr><td>${r.name}</td><td>${r.status}</td><td class="num">${r.bonus}</td></tr>
+    `).join('');
+    document.getElementById('customer-referrals-body').innerHTML = customerReferrals.map(r=>`
+      <tr><td class="num">${r.code}</td><td class="num">${r.value}</td><td>${r.status}</td></tr>
+    `).join('');
+  }
+  function copyRefCode(){
+    const code = document.getElementById('ref-code').textContent;
+    navigator.clipboard?.writeText(code);
+    showToast('تم نسخ كود الإحالة: ' + code);
+  }
+
+  // ---------- تشغيل أولي ----------
+  renderOverviewOrders();
+  renderOrders();
+  renderProducts();
+  renderReturns();
+  renderReferrals();
+
+</script>
+
+</body>
+</html>
