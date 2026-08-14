@@ -1,0 +1,68 @@
+{
+  "name": "BOTSHOP-DZ · 05 Typebot: تتبّع حالة الطلب",
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "id": "webhook-order-status",
+      "name": "Webhook: طلب تتبّع من Typebot",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [ -600, 0 ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "botshop-typebot-order-status",
+        "responseMode": "lastNode",
+        "options": {},
+        "notes": "يستقبل query param باسم order_id، وهو قيمة order_number المقروءة (مثال: ORD-10432) وليس الـ UUID الداخلي — العمود order_number أصبح معتمداً رسمياً في botshop-dz-schema.sql ويُولَّد تلقائياً عند إنشاء كل طلب."
+      }
+    },
+    {
+      "id": "get-order-status",
+      "name": "جلب حالة الطلب من Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ -380, 0 ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/orders?order_number=eq.{{ $json.query.order_id }}&select=order_status,tracking_number,delivery_company,created_at",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        },
+        "options": {},
+        "notes": "العمود order_number أصبح جزءاً معتمداً من مخطط orders (مُولَّد تلقائياً بصيغة ORD-XXXXX)، لذا الفلتر أدناه نهائي ولا يحتاج تعديلاً مستقبلياً."
+      }
+    },
+    {
+      "id": "format-status-response",
+      "name": "تنسيق رد الحالة",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [ -160, 0 ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "name": "found", "type": "boolean", "value": "={{ $json.length > 0 }}" },
+            { "name": "status_arabic", "type": "string", "value": "={{ $json.length === 0 ? 'لم يُعثر على الطلب' : ({processing:'قيد المعالجة', confirmed:'مؤكد', shipped:'تم الشحن', delivered:'تم التسليم', returned:'مرتجع', cancelled:'ملغى'}[$json[0].order_status] || $json[0].order_status) }}" },
+            { "name": "tracking_number", "type": "string", "value": "={{ $json.length > 0 ? ($json[0].tracking_number || 'غير متوفر بعد') : '' }}" },
+            { "name": "delivery_company", "type": "string", "value": "={{ $json.length > 0 ? ($json[0].delivery_company || '—') : '' }}" }
+          ]
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: طلب تتبّع من Typebot": {
+      "main": [[ { "node": "جلب حالة الطلب من Supabase", "type": "main", "index": 0 } ]]
+    },
+    "جلب حالة الطلب من Supabase": {
+      "main": [[ { "node": "تنسيق رد الحالة", "type": "main", "index": 0 } ]]
+    }
+  }
+}

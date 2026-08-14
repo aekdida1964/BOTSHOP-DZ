@@ -1,0 +1,99 @@
+{
+  "name": "BOTSHOP-DZ · 03 تحديث القائمة السوداء بعد مرتجع",
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "nodes": [
+    {
+      "id": "webhook-new-return",
+      "name": "Webhook: مرتجع جديد موثّق",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [ -600, 0 ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "botshop-new-return",
+        "responseMode": "onReceived",
+        "options": {},
+        "notes": "يُستدعى من Supabase Database Webhook عند INSERT على جدول returns. حساب المساعدة المالية نفسه يتم مباشرة داخل قاعدة البيانات عبر fn_calculate_return_assistance؛ هذا السير مخصص فقط لتحديث القائمة السوداء المشتركة."
+      }
+    },
+    {
+      "id": "get-order-customer",
+      "name": "جلب معرّف العميل من الطلب",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ -380, 0 ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/orders?id=eq.{{ $json.body.record.order_id }}&select=customer_id",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "get-current-count",
+      "name": "جلب عدد المرتجعات الحالي للعميل",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ -160, 0 ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/shared_blacklist?customer_id=eq.{{ $json[0].customer_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" }
+          ]
+        },
+        "notes": "قد لا توجد صفوف بعد لعميل جديد (أول مرتجع له) — العقدة التالية تتعامل مع الحالتين."
+      }
+    },
+    {
+      "id": "upsert-blacklist",
+      "name": "Upsert: زيادة عدّاد المرتجعات (+1)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [ 60, 0 ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/shared_blacklist",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "={{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.SUPABASE_SERVICE_ROLE_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "resolution=merge-duplicates" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"customer_id\": \"{{ $('جلب معرّف العميل من الطلب').item.json[0].customer_id }}\",\n  \"return_count\": {{ ($json[0] ? $json[0].return_count : 0) + 1 }}\n}",
+        "notes": "يعتمد على Prefer: resolution=merge-duplicates لتنفيذ upsert بالاعتماد على المفتاح الأساسي customer_id. اللون (green/orange/red) يُعاد احتسابه تلقائياً بواسطة مُشغّل fn_update_blacklist_color في قاعدة البيانات، لا حاجة لحسابه هنا."
+      }
+    }
+  ],
+  "connections": {
+    "Webhook: مرتجع جديد موثّق": {
+      "main": [[ { "node": "جلب معرّف العميل من الطلب", "type": "main", "index": 0 } ]]
+    },
+    "جلب معرّف العميل من الطلب": {
+      "main": [[ { "node": "جلب عدد المرتجعات الحالي للعميل", "type": "main", "index": 0 } ]]
+    },
+    "جلب عدد المرتجعات الحالي للعميل": {
+      "main": [[ { "node": "Upsert: زيادة عدّاد المرتجعات (+1)", "type": "main", "index": 0 } ]]
+    }
+  }
+}
