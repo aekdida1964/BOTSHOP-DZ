@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOTSHOP-DZ | متجرك المؤتمت عبر واتساب — بيع بالجملة والتجزئة في الجزائر</title>
+<meta name="description" content="BOTSHOP-DZ منصة جزائرية لبناء متجر إلكتروني مؤتمت عبر واتساب، بالدينار الجزائري، مع الدفع عند الاستلام وCCP وBaridiMob وCIB، وشركات توصيل محلية مثل Yalidine. مناسبة لتجار الجملة والتجزئة والدروبشيبينغ الحلال.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "BOTSHOP-DZ",
+  "description": "منصة جزائرية لبناء متاجر إلكترونية مؤتمتة عبر واتساب للتجار في الجزائر",
+  "areaServed": "DZ",
+  "knowsLanguage": "ar"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "ما هو BOTSHOP-DZ؟",
+      "acceptedAnswer": { "@type": "Answer", "text": "منصة جزائرية تتيح للتاجر إنشاء متجر إلكتروني جزائري مؤتمت عبر واتساب، يستقبل الطلبات ويرد على العملاء تلقائياً، مع دعم الدفع بالدينار الجزائري وشركات التوصيل المحلية." }
+    },
+    {
+      "@type": "Question",
+      "name": "هل يمكنني البيع بالجملة في الجزائر عبر المنصة؟",
+      "acceptedAnswer": { "@type": "Answer", "text": "نعم. توفر المنصة صفحات خاصة لتجار الجملة (الموردين) لعرض منتجاتهم على تجار التجزئة والتجار المتعاقدين." }
+    },
+    {
+      "@type": "Question",
+      "name": "هل الدروبشيبينغ حلال على هذه المنصة؟",
+      "acceptedAnswer": { "@type": "Answer", "text": "المنصة تعتمد نموذج التاجر المتعاقد، حيث يُحجز المنتج باسم التاجر قبل شحنه للعميل، بعقد إلكتروني وفق الشريعة الإسلامية، لضمان بيع ما يملكه التاجر فعلياً." }
+    },
+    {
+      "@type": "Question",
+      "name": "كيف يعمل الدفع عند الاستلام والدفع الإلكتروني؟",
+      "acceptedAnswer": { "@type": "Answer", "text": "تدعم المنصة الدفع عند الاستلام إلى جانب CCP وBaridiMob وبطاقة CIB، ليختار العميل الوسيلة الأنسب له عند إتمام الطلب." }
+    }
+  ]
+}
+</script>
+
+<style>
+  :root{
+    --blue:#38BDF8;
+    --violet:#7C3AED;
+    --violet-deep:#4C1D95;
+    --ink:#171335;
+    --bg:#F8F8FC;
+    --surface:#FFFFFF;
+    --surface-alt:#F1F0FA;
+    --line:#E4E1F4;
+    --muted:#5B5678;
+    --success:#16A34A;
+    --gold:#B8860B;
+    --silver:#6B7280;
+    --gradient: linear-gradient(135deg, var(--blue) 0%, var(--violet) 100%);
+    --radius: 20px;
+    --shadow: 0 20px 50px -20px rgba(76,29,149,0.25);
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'IBM Plex Sans Arabic', sans-serif;
+    line-height:1.7;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Cairo', sans-serif;
+    font-weight:800;
+    margin:0;
+    line-height:1.25;
+  }
+  .num{ font-family:'Space Grotesk', 'IBM Plex Sans Arabic', sans-serif; direction:ltr; unicode-bidi:isolate; }
+  a{ color:inherit; text-decoration:none; }
+  ul{ margin:0; padding:0; list-style:none; }
+  img,svg{ display:block; max-width:100%; }
+  .container{ max-width:1180px; margin:0 auto; padding:0 24px; }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:.85rem; font-weight:600; color:var(--violet-deep);
+    background:rgba(124,58,237,0.08); border:1px solid rgba(124,58,237,0.18);
+    padding:6px 14px; border-radius:999px; margin-bottom:16px;
+  }
+  section{ padding:88px 0; }
+  .section-head{ max-width:640px; margin:0 0 48px; }
+  .section-head h2{ font-size:clamp(1.7rem,3vw,2.3rem); margin-bottom:14px; }
+  .section-head p{ color:var(--muted); font-size:1.05rem; }
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:14px 28px; border-radius:999px; font-weight:600; font-size:1rem;
+    cursor:pointer; border:none; transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .btn:focus-visible{ outline:3px solid var(--violet-deep); outline-offset:3px; }
+  .btn-primary{ background:var(--gradient); color:#fff; box-shadow:0 12px 30px -10px rgba(124,58,237,0.55); }
+  .btn-primary:hover{ transform:translateY(-2px); box-shadow:0 16px 34px -8px rgba(124,58,237,0.6); }
+  .btn-ghost{ background:#fff; color:var(--ink); border:1.5px solid var(--line); }
+  .btn-ghost:hover{ border-color:var(--violet); color:var(--violet-deep); }
+
+  /* Header */
+  header{
+    position:sticky; top:0; z-index:50;
+    background:rgba(248,248,252,0.85); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px 0; }
+  .logo{ display:flex; align-items:center; gap:10px; font-family:'Cairo'; font-weight:900; font-size:1.25rem; }
+  .logo-mark{
+    width:38px; height:38px; border-radius:11px; background:var(--gradient);
+    display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.1rem;
+  }
+  .nav-links{ display:flex; align-items:center; gap:28px; font-weight:600; font-size:.95rem; color:var(--muted); }
+  .nav-links a:hover{ color:var(--violet-deep); }
+  .nav-actions{ display:flex; align-items:center; gap:12px; }
+  .nav-toggle{ display:none; background:none; border:none; font-size:1.6rem; cursor:pointer; color:var(--ink); }
+
+  /* Hero */
+  .hero{ padding:72px 0 60px; overflow:hidden; }
+  .hero-grid{ display:grid; grid-template-columns:1.05fr .95fr; gap:56px; align-items:center; }
+  .hero h1{ font-size:clamp(2.1rem,4.4vw,3.4rem); }
+  .hero h1 .grad-text{
+    background:var(--gradient); -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .hero p.lead{ margin:22px 0 30px; font-size:1.15rem; color:var(--muted); max-width:520px; }
+  .hero-actions{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:28px; }
+  .hero-notes{ display:flex; gap:22px; flex-wrap:wrap; font-size:.9rem; color:var(--muted); font-weight:600; }
+  .hero-notes li{ display:flex; align-items:center; gap:7px; }
+  .dot-check{ width:18px; height:18px; border-radius:50%; background:var(--success); color:#fff; display:flex; align-items:center; justify-content:center; font-size:.7rem; flex:none; }
+
+  /* Phone mockup — signature element */
+  .phone-wrap{ display:flex; justify-content:center; position:relative; }
+  .phone-wrap::before{
+    content:''; position:absolute; inset:-40px; border-radius:50%;
+    background:radial-gradient(circle, rgba(124,58,237,0.18), transparent 65%);
+    z-index:0;
+  }
+  .phone{
+    position:relative; z-index:1;
+    width:290px; height:590px; border-radius:44px; padding:14px;
+    background:linear-gradient(160deg,#1E1B4B,#0F0D28);
+    box-shadow:var(--shadow);
+  }
+  .phone-screen{
+    position:relative; width:100%; height:100%; border-radius:32px; overflow:hidden;
+    background:linear-gradient(180deg,#EFF6FF 0%, #F5F0FF 100%);
+    display:flex; flex-direction:column;
+  }
+  .phone-status{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 18px 8px; font-size:.72rem; font-weight:700; color:var(--ink);
+  }
+  .chat-bar{
+    display:flex; align-items:center; gap:10px; padding:10px 16px;
+    background:var(--gradient); color:#fff;
+  }
+  .chat-avatar{ width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,0.25); display:flex; align-items:center; justify-content:center; font-size:1rem; }
+  .chat-title{ font-weight:700; font-size:.9rem; }
+  .chat-sub{ display:flex; align-items:center; gap:6px; font-size:.68rem; opacity:.9; }
+  .clock-badge{
+    margin-right:auto; display:flex; align-items:center; gap:5px;
+    background:rgba(255,255,255,0.2); padding:4px 9px; border-radius:999px; font-size:.68rem; font-weight:700;
+  }
+  .clock-badge .clock-icon{ position:relative; width:12px; height:12px; }
+  .clock-pulse{
+    position:absolute; inset:-4px; border-radius:50%; border:2px solid #fff;
+    animation:pulse 1.8s ease-out infinite;
+  }
+  @keyframes pulse{ 0%{ transform:scale(.6); opacity:.9;} 100%{ transform:scale(1.6); opacity:0;} }
+
+  .chat-body{ flex:1; padding:16px 12px; display:flex; flex-direction:column; gap:10px; overflow:hidden; }
+  .bubble{
+    max-width:78%; padding:9px 13px; border-radius:14px; font-size:.78rem; line-height:1.5;
+    opacity:0; transform:translateY(8px); animation:rise .5s ease forwards;
+  }
+  .bubble.bot{ align-self:flex-start; background:#fff; border:1px solid var(--line); border-bottom-left-radius:4px; }
+  .bubble.user{ align-self:flex-end; background:var(--gradient); color:#fff; border-bottom-right-radius:4px; }
+  .bubble.card{ align-self:flex-start; background:#fff; border:1px solid var(--line); border-radius:14px; padding:0; overflow:hidden; width:76%; }
+  .bubble.card .cimg{ height:60px; background:linear-gradient(135deg,var(--blue),var(--violet)); }
+  .bubble.card .cbody{ padding:8px 10px; }
+  .bubble.card .cbody b{ font-size:.78rem; }
+  .bubble.card .cbody span{ display:block; font-size:.68rem; color:var(--muted); margin-top:2px; }
+  .ticks{ font-size:.6rem; color:var(--success); }
+
+  .bubble:nth-child(1){ animation-delay:.3s; }
+  .bubble:nth-child(2){ animation-delay:1.1s; }
+  .bubble:nth-child(3){ animation-delay:1.9s; }
+  .bubble:nth-child(4){ animation-delay:2.7s; }
+  @keyframes rise{ to{ opacity:1; transform:translateY(0); } }
+
+  .chat-input{
+    display:flex; align-items:center; gap:8px; padding:10px 12px;
+    background:#fff; border-top:1px solid var(--line);
+  }
+  .chat-input .field{ flex:1; height:30px; border-radius:999px; background:var(--surface-alt); }
+  .chat-input .send{ width:30px; height:30px; border-radius:50%; background:var(--gradient); }
+
+  /* Trust / value strip */
+  .strip{ background:var(--surface-alt); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+  .strip .container{ display:grid; grid-template-columns:repeat(3,1fr); gap:20px; padding:34px 24px; }
+  .strip-item{ display:flex; align-items:center; gap:12px; font-weight:700; font-size:.95rem; }
+  .strip-item .ic{ width:38px; height:38px; border-radius:11px; background:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 6px 16px -8px rgba(76,29,149,.3); flex:none; }
+
+  /* Features */
+  .features-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:22px; }
+  .feature-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:28px 24px; transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .feature-card:hover{ transform:translateY(-4px); box-shadow:var(--shadow); }
+  .feature-ic{ width:46px; height:46px; border-radius:13px; background:var(--gradient); display:flex; align-items:center; justify-content:center; color:#fff; font-size:1.3rem; margin-bottom:16px; }
+  .feature-card h3{ font-size:1.05rem; margin-bottom:8px; }
+  .feature-card p{ color:var(--muted); font-size:.92rem; margin:0; }
+
+  /* How it works */
+  .steps{ display:grid; grid-template-columns:repeat(3,1fr); gap:24px; counter-reset:step; }
+  .step{ position:relative; padding-top:8px; }
+  .step-num{
+    font-family:'Space Grotesk'; font-weight:700; font-size:2.4rem; color:transparent;
+    -webkit-text-stroke:1.5px var(--violet); opacity:.35; margin-bottom:6px; display:block;
+  }
+  .step h3{ font-size:1.05rem; margin-bottom:8px; }
+  .step p{ color:var(--muted); font-size:.92rem; }
+
+  /* Pricing */
+  .pricing-alt{ background:var(--surface-alt); }
+  .pricing-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
+  .plan{
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    padding:26px 22px; display:flex; flex-direction:column; gap:16px;
+    position:relative;
+  }
+  .plan.featured{ border:2px solid var(--violet); box-shadow:var(--shadow); }
+  .plan-badge{
+    position:absolute; top:-13px; right:22px; background:var(--gradient); color:#fff;
+    font-size:.72rem; font-weight:700; padding:4px 12px; border-radius:999px;
+  }
+  .plan-name{ font-family:'Cairo'; font-weight:800; font-size:1.15rem; }
+  .plan-price{ display:flex; align-items:baseline; gap:6px; }
+  .plan-price .num{ font-size:2rem; font-weight:700; }
+  .plan-price .unit{ color:var(--muted); font-size:.85rem; }
+  .plan-quota{ font-size:.85rem; font-weight:600; color:var(--violet-deep); background:rgba(124,58,237,.08); padding:6px 10px; border-radius:10px; }
+  .plan ul{ display:flex; flex-direction:column; gap:10px; font-size:.86rem; color:var(--ink); }
+  .plan ul li{ display:flex; align-items:flex-start; gap:8px; }
+  .plan .btn{ margin-top:auto; width:100%; }
+
+  /* Referral */
+  .referral-grid{ display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  .referral-card{ background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:28px; }
+  .referral-card h3{ font-size:1.15rem; margin-bottom:14px; }
+  .referral-card p{ color:var(--muted); font-size:.92rem; }
+  table.discount-table{ width:100%; border-collapse:collapse; margin-top:16px; font-size:.85rem; }
+  table.discount-table th, table.discount-table td{ padding:10px 8px; text-align:right; border-bottom:1px solid var(--line); }
+  table.discount-table th{ color:var(--muted); font-weight:600; }
+  table.discount-table td.num{ font-weight:700; color:var(--violet-deep); }
+
+  /* Founders */
+  .founders-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  .founder-card{ border-radius:var(--radius); padding:28px; color:#fff; position:relative; overflow:hidden; }
+  .founder-card.gold{ background:linear-gradient(135deg,#B8860B,#7C5A00); }
+  .founder-card.silver{ background:linear-gradient(135deg,#8A8FA6,#4B4E63); }
+  .founder-card h3{ font-size:1.15rem; margin-bottom:10px; }
+  .founder-card p{ opacity:.92; font-size:.9rem; }
+  .founder-card .tag{ display:inline-block; font-size:.72rem; font-weight:700; background:rgba(255,255,255,.2); padding:4px 10px; border-radius:999px; margin-bottom:12px; }
+
+  /* FAQ */
+  .faq-item{ background:#fff; border:1px solid var(--line); border-radius:16px; margin-bottom:12px; overflow:hidden; }
+  .faq-item summary{ cursor:pointer; padding:18px 20px; font-weight:700; font-size:.98rem; display:flex; justify-content:space-between; align-items:center; list-style:none; }
+  .faq-item summary::-webkit-details-marker{ display:none; }
+  .faq-item summary::after{ content:'+'; font-size:1.3rem; color:var(--violet); transition:transform .2s ease; }
+  .faq-item[open] summary::after{ transform:rotate(45deg); }
+  .faq-item .faq-a{ padding:0 20px 18px; color:var(--muted); font-size:.9rem; }
+
+  /* CTA banner */
+  .cta-banner{
+    background:var(--gradient); border-radius:28px; padding:56px 40px; text-align:center; color:#fff;
+    margin:0 24px;
+  }
+  .cta-banner h2{ font-size:clamp(1.5rem,3vw,2rem); margin-bottom:14px; }
+  .cta-banner p{ opacity:.92; margin-bottom:26px; }
+  .cta-banner .btn-ghost{ background:#fff; color:var(--violet-deep); border:none; }
+
+  footer{ padding:56px 0 32px; }
+  .footer-grid{ display:grid; grid-template-columns:2fr 1fr 1fr 1fr; gap:32px; margin-bottom:36px; }
+  .footer-grid h4{ font-size:.9rem; margin-bottom:14px; }
+  .footer-grid ul{ display:flex; flex-direction:column; gap:10px; font-size:.88rem; color:var(--muted); }
+  .footer-grid ul a:hover{ color:var(--violet-deep); }
+  .footer-bottom{ border-top:1px solid var(--line); padding-top:22px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; font-size:.82rem; color:var(--muted); }
+
+  [data-reveal]{ opacity:0; transform:translateY(18px); transition:opacity .6s ease, transform .6s ease; }
+  [data-reveal].in{ opacity:1; transform:translateY(0); }
+
+  @media (max-width:960px){
+    .hero-grid{ grid-template-columns:1fr; }
+    .phone{ margin:0 auto; }
+    .features-grid, .steps{ grid-template-columns:repeat(2,1fr); }
+    .pricing-grid{ grid-template-columns:repeat(2,1fr); }
+    .referral-grid, .founders-grid{ grid-template-columns:1fr; }
+    .footer-grid{ grid-template-columns:1fr 1fr; }
+    .strip .container{ grid-template-columns:1fr; }
+  }
+  @media (max-width:640px){
+    .nav-links{ display:none; }
+    .nav-toggle{ display:block; }
+    .features-grid, .steps, .pricing-grid{ grid-template-columns:1fr; }
+    section{ padding:64px 0; }
+    .cta-banner{ margin:0 12px; padding:40px 22px; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container nav">
+    <div class="logo"><span class="logo-mark">ب</span> BOTSHOP-DZ</div>
+    <nav class="nav-links">
+      <a href="#features">المزايا</a>
+      <a href="#how">كيف تعمل</a>
+      <a href="#pricing">الأسعار</a>
+      <a href="#referral">الإحالة</a>
+      <a href="#faq">الأسئلة الشائعة</a>
+    </nav>
+    <div class="nav-actions">
+      <a href="02-auth.html" class="btn btn-ghost">دخول</a>
+      <a href="02-auth.html?mode=signup" class="btn btn-primary">ابدأ مجاناً</a>
+    </div>
+    <button class="nav-toggle" aria-label="القائمة">☰</button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container hero-grid">
+    <div data-reveal>
+      <span class="eyebrow">🇩🇿 صُمم لتجار الجزائر</span>
+      <h1>متجرك يبيع ويرد على الزبائن<br><span class="grad-text">حتى وأنت نائم</span></h1>
+      <p class="lead">BOTSHOP-DZ يحوّل واتساب إلى متجر مؤتمت كامل: استقبال الطلبات، الرد على الأسئلة، والدفع بالدينار الجزائري — بدون أي كود، وبأدوات مجانية للانطلاق.</p>
+      <div class="hero-actions">
+        <a href="02-auth.html?mode=signup" class="btn btn-primary">أنشئ متجرك مجاناً</a>
+        <a href="#pricing" class="btn btn-ghost">شاهد خطط الأسعار</a>
+      </div>
+      <ul class="hero-notes">
+        <li><span class="dot-check">✓</span> بدون بطاقة بنكية للبدء</li>
+        <li><span class="dot-check">✓</span> الدفع عند الاستلام مدعوم</li>
+        <li><span class="dot-check">✓</span> واجهة عربية بالكامل</li>
+      </ul>
+    </div>
+
+    <div class="phone-wrap" data-reveal>
+      <div class="phone">
+        <div class="phone-screen">
+          <div class="phone-status">
+            <span class="num">9:41</span>
+            <span>●●●</span>
+          </div>
+          <div class="chat-bar">
+            <div class="chat-avatar">🛍️</div>
+            <div>
+              <div class="chat-title">متجر أمين للأحذية</div>
+              <div class="chat-sub">مساعد آلي متصل الآن</div>
+            </div>
+            <div class="clock-badge">
+              <span class="clock-icon">⏰<span class="clock-pulse"></span></span>
+              <span class="num">24/7</span>
+            </div>
+          </div>
+          <div class="chat-body">
+            <div class="bubble user">السلام عليكم، الحذاء الأحمر مقاس 42 متوفر؟</div>
+            <div class="bubble bot">وعليكم السلام 👋 نعم متوفر، السعر 4200 دج. تحبّ نأكد لك الطلب؟</div>
+            <div class="bubble card">
+              <div class="cimg"></div>
+              <div class="cbody">
+                <b>حذاء رياضي أحمر — مقاس 42</b>
+                <span class="num">4200 دج · التوصيل خلال 48 ساعة</span>
+              </div>
+            </div>
+            <div class="bubble bot">تم تأكيد طلبك ✅ رقم التتبع سيصلك عبر واتساب فور الشحن. <span class="ticks">تم الإرسال ✓✓</span></div>
+          </div>
+          <div class="chat-input">
+            <div class="field"></div>
+            <div class="send"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="strip">
+  <div class="container">
+    <div class="strip-item"><span class="ic">💳</span> دفع عند الاستلام أو عبر CCP وBaridiMob وCIB</div>
+    <div class="strip-item"><span class="ic">🚚</span> تكامل مع شركات توصيل جزائرية محلية</div>
+    <div class="strip-item"><span class="ic">🛡️</span> قائمة سوداء مشتركة تحمي التجار من المرتجعات المتكررة</div>
+  </div>
+</div>
+
+<section id="features">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <span class="eyebrow">المزايا الأساسية</span>
+      <h2>كل ما يحتاجه تاجرك للانطلاق فوراً</h2>
+      <p>من استقبال الطلب إلى تحصيل ثمنه وتوصيله، بدون أدوات متفرقة.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card" data-reveal><div class="feature-ic">💬</div><h3>متجر مؤتمت عبر واتساب</h3><p>يرد على الزبائن ويأخذ الطلبات تلقائياً عبر Typebot وWhatsApp، على مدار الساعة.</p></div>
+      <div class="feature-card" data-reveal><div class="feature-ic">💳</div><h3>دفع محلي متكامل</h3><p>CCP وBaridiMob وبطاقة CIB، إضافة إلى الدفع عند الاستلام لراحة عملائك.</p></div>
+      <div class="feature-card" data-reveal><div class="feature-ic">🛡️</div><h3>قائمة سوداء مشتركة</h3><p>يطّلع التجار على تاريخ إرجاعات العميل قبل قبول الطلب، لتقليل الخسائر.</p></div>
+      <div class="feature-card" data-reveal><div class="feature-ic">↩️</div><h3>مساعدة على المرتجعات</h3><p>تحصل على مساعدة تصل إلى 50% من كلفة توصيل المرتجع، كرصيد لتجديد أو ترقية اشتراكك.</p></div>
+      <div class="feature-card" data-reveal><div class="feature-ic">🏪</div><h3>جملة، تجزئة، أو تعاقد</h3><p>بع بضاعتك مباشرة، أو اعرض منتجات موردين معتمدين بعقد إلكتروني شرعي.</p></div>
+      <div class="feature-card" data-reveal><div class="feature-ic">🤝</div><h3>اربح من الإحالة</h3><p>ادعُ تجاراً وعملاء جدد واستفد من خصومات وعمولات على كل اشتراك أو عملية شراء.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="pricing-alt">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <span class="eyebrow">كيف تعمل المنصة</span>
+      <h2>من التسجيل إلى أول طلب، في 3 خطوات</h2>
+    </div>
+    <div class="steps">
+      <div class="step" data-reveal><span class="step-num num">01</span><h3>سجّل متجرك</h3><p>أدخل بيانات متجرك واختر نوعه: مورّد، تاجر تجزئة، أو تاجر متعاقد.</p></div>
+      <div class="step" data-reveal><span class="step-num num">02</span><h3>أضف منتجاتك</h3><p>ارفع حتى 3 صور مضغوطة وفيديو قصير اختياري لكل منتج، ليبقى متجرك سريعاً.</p></div>
+      <div class="step" data-reveal><span class="step-num num">03</span><h3>استقبل الطلبات آلياً</h3><p>يتولى المساعد الآلي الرد على الزبائن وتأكيد الطلبات، وتصلك إشعارات فورية على واتساب.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <span class="eyebrow">خطط الأسعار</span>
+      <h2>ابدأ مجاناً، وترقّى متى احتجت</h2>
+      <p>العمولة تُقتطع فقط عند نجاح الطلب. مساعدة المرتجعات تُضاف كرصيد لتجديد أو ترقية اشتراكك.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="plan" data-reveal>
+        <div class="plan-name">المجانية</div>
+        <div class="plan-price"><span class="num">0</span><span class="unit">دج / الشهر</span></div>
+        <div class="plan-quota">10 طلبات مرة واحدة مدى الحياة</div>
+        <ul>
+          <li>✅ عمولة <span class="num">35</span> دج + <span class="num">3%</span> لكل طلب ناجح</li>
+          <li>✅ مساعدة <span class="num">15%</span> على المرتجعات</li>
+        </ul>
+        <a href="02-auth.html?mode=signup&plan=free" class="btn btn-ghost">ابدأ الآن</a>
+      </div>
+      <div class="plan" data-reveal>
+        <div class="plan-name">الأساسية</div>
+        <div class="plan-price"><span class="num">2000</span><span class="unit">دج / الشهر</span></div>
+        <div class="plan-quota">150 طلب شهرياً</div>
+        <ul>
+          <li>✅ عمولة <span class="num">20</span> دج + <span class="num">1.5%</span> لكل طلب ناجح</li>
+          <li>✅ مساعدة <span class="num">30%</span> على 13 مرتجع</li>
+        </ul>
+        <a href="02-auth.html?mode=signup&plan=basic" class="btn btn-ghost">اختر الأساسية</a>
+      </div>
+      <div class="plan featured" data-reveal>
+        <span class="plan-badge">الأكثر طلباً</span>
+        <div class="plan-name">الاحترافية</div>
+        <div class="plan-price"><span class="num">5000</span><span class="unit">دج / الشهر</span></div>
+        <div class="plan-quota">300 طلب شهرياً</div>
+        <ul>
+          <li>✅ عمولة <span class="num">12</span> دج + <span class="num">0.8%</span> لكل طلب ناجح</li>
+          <li>✅ مساعدة <span class="num">40%</span> على 25 مرتجع</li>
+          <li>✅ القائمة السوداء المشتركة</li>
+        </ul>
+        <a href="02-auth.html?mode=signup&plan=pro" class="btn btn-primary">اختر الاحترافية</a>
+      </div>
+      <div class="plan" data-reveal>
+        <div class="plan-name">المؤسساتية</div>
+        <div class="plan-price"><span class="num">8500</span><span class="unit">دج / الشهر</span></div>
+        <div class="plan-quota">طلبات غير محدودة</div>
+        <ul>
+          <li>✅ عمولة <span class="num">6</span> دج + <span class="num">0.3%</span> لكل طلب ناجح</li>
+          <li>✅ مساعدة <span class="num">50%</span> على 34 مرتجع</li>
+          <li>✅ القائمة السوداء + مساعدة فورية</li>
+        </ul>
+        <a href="02-auth.html?mode=signup&plan=enterprise" class="btn btn-ghost">اختر المؤسساتية</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="referral" class="pricing-alt">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <span class="eyebrow">نظام الإحالة</span>
+      <h2>اربح وأنت توسّع شبكتك</h2>
+    </div>
+    <div class="referral-grid">
+      <div class="referral-card" data-reveal>
+        <h3>🤝 إحالة التجار</h3>
+        <p>التاجر المُحال الجديد يحصل على خصم <b class="num">20%</b> على أول اشتراك مدفوع. أما التاجر المُحيل فيحصل على رصيد <b class="num">500</b> دج داخلي عن كل تاجر مُحال يشترك في خطة مدفوعة، يُستعمل لتجديد أو ترقية اشتراكه.</p>
+      </div>
+      <div class="referral-card" data-reveal>
+        <h3>🎁 إحالة العملاء</h3>
+        <p>عند إتمام أول عملية شراء للعميل المُحال، يحصل الطرفان على كود خصم لمرة واحدة عند الشراء من نفس المتجر، يتحمّله التاجر بدل مصاريف الإعلانات:</p>
+        <table class="discount-table">
+          <thead><tr><th>قيمة المنتج</th><th>الخصم لكل طرف</th></tr></thead>
+          <tbody>
+            <tr><td>أقل من <span class="num">2000</span> دج</td><td class="num">100 دج</td></tr>
+            <tr><td><span class="num">2001</span> – <span class="num">5000</span> دج</td><td class="num">200 دج</td></tr>
+            <tr><td><span class="num">5001</span> – <span class="num">10000</span> دج</td><td class="num">300 دج</td></tr>
+            <tr><td><span class="num">10001</span> – <span class="num">15000</span> دج</td><td class="num">400 دج</td></tr>
+            <tr><td>أكثر من <span class="num">15001</span> دج</td><td class="num">500 دج</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="founders">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <span class="eyebrow">عرض التجار المؤسسون · لفترة محدودة</span>
+      <h2>كن من أوائل تجار BOTSHOP-DZ</h2>
+      <p>مخصص لأوائل التجار الذين يجلبون تجاراً جدداً مشتركين في خطة مدفوعة خلال الشهر التجريبي.</p>
+    </div>
+    <div class="founders-grid">
+      <div class="founder-card gold" data-reveal>
+        <span class="tag">🥇 الذهبيون — 20 تاجراً أول</span>
+        <h3>اجلب 4 تجار مشتركين خلال الشهر التجريبي</h3>
+        <p>اشتراك في الخطة الاحترافية بخصم 20% مدى الحياة، وتخفيض 50% من رسوم العمولة.</p>
+      </div>
+      <div class="founder-card silver" data-reveal>
+        <span class="tag">🥈 الفضيون — 20 تاجراً أول</span>
+        <h3>اجلب تاجرين مشتركين خلال الشهر التجريبي</h3>
+        <p>خصم 20% مدى الحياة على اشتراك الخطة الأساسية، وتخفيض 50% من رسوم العمولة.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq" class="pricing-alt">
+  <div class="container">
+    <div class="section-head" data-reveal>
+      <span class="eyebrow">الأسئلة الشائعة</span>
+      <h2>كل ما تحتاج معرفته قبل البدء</h2>
+    </div>
+
+    <details class="faq-item" data-reveal>
+      <summary>ما هو BOTSHOP-DZ؟</summary>
+      <div class="faq-a">منصة جزائرية تتيح للتاجر إنشاء متجر إلكتروني جزائري مؤتمت عبر واتساب، يستقبل الطلبات ويرد على العملاء تلقائياً، مع دعم الدفع بالدينار الجزائري وشركات التوصيل المحلية.</div>
+    </details>
+    <details class="faq-item" data-reveal>
+      <summary>هل يمكنني البيع بالجملة في الجزائر عبر المنصة؟</summary>
+      <div class="faq-a">نعم، توفر المنصة صفحات خاصة لتجار الجملة (الموردين) لعرض منتجاتهم على تجار التجزئة والتجار المتعاقدين.</div>
+    </details>
+    <details class="faq-item" data-reveal>
+      <summary>هل الدروبشيبينغ حلال على هذه المنصة؟</summary>
+      <div class="faq-a">تعتمد المنصة نموذج التاجر المتعاقد: يُحجز المنتج باسم التاجر لدى المورّد قبل شحنه للعميل، عبر عقد إلكتروني وفق الشريعة الإسلامية، لضمان بيع ما يملكه التاجر فعلياً.</div>
+    </details>
+    <details class="faq-item" data-reveal>
+      <summary>كيف يعمل الدفع عند الاستلام والدفع الإلكتروني؟</summary>
+      <div class="faq-a">تدعم المنصة الدفع عند الاستلام إلى جانب CCP وBaridiMob وبطاقة CIB، ليختار العميل الوسيلة الأنسب له عند إتمام الطلب.</div>
+    </details>
+    <details class="faq-item" data-reveal>
+      <summary>كيف تعمل القائمة السوداء المشتركة؟</summary>
+      <div class="faq-a">تُصنَّف حسابات العملاء بالألوان حسب عدد المرتجعات: أخضر لأقل من 3 مرتجعات، برتقالي لأقل من 5، وأحمر لـ 5 مرتجعات فأكثر — ويظهر التصنيف للتاجر عند استلام طلب جديد.</div>
+    </details>
+  </div>
+</section>
+
+<section>
+  <div class="cta-banner" data-reveal>
+    <h2>جاهز تحوّل رقم واتساب إلى متجر يبيع لوحده؟</h2>
+    <p>التسجيل مجاني، وبدون بطاقة بنكية.</p>
+    <a href="02-auth.html?mode=signup" class="btn btn-ghost">أنشئ متجرك الآن</a>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="logo" style="margin-bottom:12px;"><span class="logo-mark">ب</span> BOTSHOP-DZ</div>
+        <p style="color:var(--muted); font-size:.9rem; max-width:280px;">منصة جزائرية لبناء متاجر مؤتمتة عبر واتساب، بأدوات مجانية للانطلاق.</p>
+      </div>
+      <div>
+        <h4>المنصة</h4>
+        <ul>
+          <li><a href="#features">المزايا</a></li>
+          <li><a href="#pricing">الأسعار</a></li>
+          <li><a href="#referral">الإحالة</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>للتجار</h4>
+        <ul>
+          <li><a href="02-auth.html?mode=signup&role=supplier">تاجر جملة</a></li>
+          <li><a href="02-auth.html?mode=signup&role=retailer">تاجر تجزئة</a></li>
+          <li><a href="02-auth.html?mode=signup&role=contracted">تاجر متعاقد</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>الحساب</h4>
+        <ul>
+          <li><a href="02-auth.html">تسجيل الدخول</a></li>
+          <li><a href="02-auth.html?mode=signup">إنشاء حساب</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© BOTSHOP-DZ — جميع الحقوق محفوظة</span>
+      <span>صُنع للتجار الجزائريين 🇩🇿</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // كشف عند التمرير لإظهار العناصر تدريجياً
+  const revealEls = document.querySelectorAll('[data-reveal]');
+  if('IntersectionObserver' in window){
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, { threshold:.12 });
+    revealEls.forEach(el=>io.observe(el));
+  } else {
+    revealEls.forEach(el=>el.classList.add('in'));
+  }
+
+  // إعادة تشغيل حلقة المحادثة داخل الهاتف
+  const bubbles = document.querySelectorAll('.chat-body .bubble');
+  function loopChat(){
+    bubbles.forEach(b=>{ b.style.animation='none'; b.offsetHeight; b.style.animation=''; });
+  }
+  setInterval(loopChat, 6000);
+
+  // قائمة الجوال
+  const toggle = document.querySelector('.nav-toggle');
+  const links = document.querySelector('.nav-links');
+  toggle?.addEventListener('click', ()=>{
+    const open = links.style.display === 'flex';
+    links.style.display = open ? 'none' : 'flex';
+    links.style.flexDirection = 'column';
+    links.style.position='absolute'; links.style.top='64px'; links.style.right='24px'; links.style.left='24px';
+    links.style.background='#fff'; links.style.border='1px solid var(--line)'; links.style.borderRadius='14px'; links.style.padding='16px';
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل الدخول أو إنشاء حساب | BOTSHOP-DZ</title>
+<meta name="description" content="سجّل دخولك أو أنشئ حساباً جديداً في BOTSHOP-DZ كعميل، تاجر جملة، تاجر تجزئة، أو تاجر متعاقد.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<style>
+  :root{
+    --blue:#38BDF8; --violet:#7C3AED; --violet-deep:#4C1D95; --ink:#171335;
+    --bg:#F8F8FC; --surface:#FFFFFF; --surface-alt:#F1F0FA; --line:#E4E1F4; --muted:#5B5678;
+    --success:#16A34A; --danger:#DC2626;
+    --gradient: linear-gradient(135deg, var(--blue) 0%, var(--violet) 100%);
+    --radius:20px; --shadow:0 20px 50px -20px rgba(76,29,149,.25);
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh; background:var(--bg); color:var(--ink);
+    font-family:'IBM Plex Sans Arabic', sans-serif; line-height:1.7;
+  }
+  h1,h2,.display{ font-family:'Cairo'; font-weight:800; margin:0; }
+  .num{ font-family:'Space Grotesk','IBM Plex Sans Arabic'; direction:ltr; unicode-bidi:isolate; }
+  a{ color:inherit; text-decoration:none; }
+
+  .top-bar{ padding:20px 24px; }
+  .logo{ display:flex; align-items:center; gap:10px; font-family:'Cairo'; font-weight:900; font-size:1.15rem; width:fit-content; }
+  .logo-mark{ width:34px; height:34px; border-radius:10px; background:var(--gradient); display:flex; align-items:center; justify-content:center; color:#fff; }
+
+  .layout{ display:grid; grid-template-columns:1fr 1fr; min-height:calc(100vh - 76px); }
+  .side{
+    background:var(--gradient); color:#fff; padding:60px 52px; display:flex; flex-direction:column; justify-content:center;
+    position:relative; overflow:hidden;
+  }
+  .side::after{
+    content:''; position:absolute; inset:0;
+    background:radial-gradient(circle at 30% 20%, rgba(255,255,255,.18), transparent 45%),
+               radial-gradient(circle at 80% 80%, rgba(255,255,255,.12), transparent 40%);
+  }
+  .side-inner{ position:relative; z-index:1; max-width:420px; }
+  .side h2{ font-size:2rem; margin-bottom:16px; }
+  .side p{ opacity:.9; margin-bottom:32px; }
+  .side-feature{ display:flex; align-items:flex-start; gap:12px; margin-bottom:18px; font-size:.92rem; }
+  .side-feature .ic{ width:34px; height:34px; border-radius:10px; background:rgba(255,255,255,.18); display:flex; align-items:center; justify-content:center; flex:none; }
+
+  .form-col{ display:flex; align-items:center; justify-content:center; padding:48px 24px; }
+  .form-card{ width:100%; max-width:440px; }
+  .tabs{ display:flex; background:var(--surface-alt); border-radius:999px; padding:5px; margin-bottom:28px; }
+  .tab{ flex:1; text-align:center; padding:10px; border-radius:999px; font-weight:700; font-size:.9rem; cursor:pointer; color:var(--muted); }
+  .tab.active{ background:#fff; color:var(--violet-deep); box-shadow:0 6px 14px -8px rgba(76,29,149,.4); }
+
+  .form-card h1{ font-size:1.5rem; margin-bottom:6px; }
+  .form-sub{ color:var(--muted); font-size:.9rem; margin-bottom:28px; }
+
+  .role-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:22px; }
+  .role-card{
+    border:1.5px solid var(--line); border-radius:14px; padding:14px 12px; cursor:pointer;
+    display:flex; flex-direction:column; gap:6px; transition:border-color .15s ease, background .15s ease;
+  }
+  .role-card .ic{ font-size:1.3rem; }
+  .role-card b{ font-size:.85rem; }
+  .role-card span{ font-size:.72rem; color:var(--muted); }
+  .role-card.selected{ border-color:var(--violet); background:rgba(124,58,237,.06); }
+  .role-card input{ position:absolute; opacity:0; pointer-events:none; }
+
+  form{ display:flex; flex-direction:column; gap:16px; }
+  .field-group{ display:flex; flex-direction:column; gap:6px; }
+  .field-group label{ font-size:.85rem; font-weight:700; }
+  .field-group .hint{ font-size:.75rem; color:var(--muted); font-weight:400; }
+  input[type=text], input[type=tel], input[type=password], input[type=email], select{
+    padding:13px 14px; border-radius:12px; border:1.5px solid var(--line); background:#fff;
+    font-family:inherit; font-size:.92rem; color:var(--ink); outline:none;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  input:focus, select:focus{ border-color:var(--violet); box-shadow:0 0 0 4px rgba(124,58,237,.12); }
+  input:invalid[data-touched="true"]{ border-color:var(--danger); }
+  .error-msg{ font-size:.75rem; color:var(--danger); display:none; }
+  input:invalid[data-touched="true"] ~ .error-msg{ display:block; }
+
+  .row-2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .store-fields{ display:none; flex-direction:column; gap:16px; padding-top:4px; border-top:1px dashed var(--line); margin-top:4px; }
+  .store-fields.show{ display:flex; }
+
+  .referral-note{ font-size:.78rem; color:var(--violet-deep); background:rgba(124,58,237,.07); padding:10px 12px; border-radius:10px; display:none; }
+  .referral-note.show{ display:block; }
+
+  .checkbox-row{ display:flex; align-items:flex-start; gap:8px; font-size:.82rem; color:var(--muted); }
+  .checkbox-row input{ margin-top:3px; }
+  .checkbox-row a{ color:var(--violet-deep); font-weight:700; }
+
+  .btn{
+    padding:14px; border-radius:12px; border:none; font-weight:700; font-size:.98rem; cursor:pointer;
+    background:var(--gradient); color:#fff; transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .btn:hover{ transform:translateY(-1px); box-shadow:0 14px 30px -10px rgba(124,58,237,.55); }
+  .btn:focus-visible{ outline:3px solid var(--violet-deep); outline-offset:3px; }
+  .btn[disabled]{ opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
+
+  .divider{ display:flex; align-items:center; gap:10px; color:var(--muted); font-size:.8rem; margin:6px 0; }
+  .divider::before, .divider::after{ content:''; flex:1; height:1px; background:var(--line); }
+
+  .switch-note{ text-align:center; font-size:.88rem; color:var(--muted); }
+  .switch-note button{ background:none; border:none; color:var(--violet-deep); font-weight:700; cursor:pointer; font-family:inherit; font-size:inherit; }
+
+  .toast{
+    position:fixed; bottom:24px; right:24px; background:var(--ink); color:#fff; padding:14px 18px;
+    border-radius:12px; font-size:.85rem; box-shadow:var(--shadow); display:flex; align-items:center; gap:10px;
+    transform:translateY(120%); transition:transform .3s ease; z-index:100;
+  }
+  .toast.show{ transform:translateY(0); }
+
+  @media (max-width:900px){
+    .layout{ grid-template-columns:1fr; }
+    .side{ display:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <a href="01-landing.html" class="logo"><span class="logo-mark">ب</span> BOTSHOP-DZ</a>
+</div>
+
+<div class="layout">
+  <aside class="side">
+    <div class="side-inner">
+      <h2>متجرك المؤتمت يبدأ من هنا</h2>
+      <p>سجّل دخولك لمتابعة طلباتك، أو أنشئ حساباً جديداً وابدأ البيع خلال دقائق.</p>
+      <div class="side-feature"><span class="ic">💬</span> رد آلي فوري على عملائك عبر واتساب</div>
+      <div class="side-feature"><span class="ic">💳</span> دفع بالدينار الجزائري بكل الوسائل المحلية</div>
+      <div class="side-feature"><span class="ic">🚚</span> تكامل مع شركات التوصيل الجزائرية</div>
+    </div>
+  </aside>
+
+  <main class="form-col">
+    <div class="form-card">
+      <div class="tabs">
+        <div class="tab" id="tab-login" role="button">تسجيل الدخول</div>
+        <div class="tab" id="tab-signup" role="button">إنشاء حساب</div>
+      </div>
+
+      <!-- ============ نموذج تسجيل الدخول ============ -->
+      <div id="login-view">
+        <h1>مرحباً بعودتك 👋</h1>
+        <p class="form-sub">أدخل رقم هاتفك وكلمة المرور للدخول إلى لوحة تحكمك.</p>
+        <form id="login-form" novalidate>
+          <div class="field-group">
+            <label for="login-email">البريد الإلكتروني</label>
+            <input type="email" id="login-email" placeholder="example@email.com" required>
+            <span class="error-msg">أدخل بريداً إلكترونياً صحيحاً</span>
+          </div>
+          <div class="field-group">
+            <label for="login-pass">كلمة المرور</label>
+            <input type="password" id="login-pass" minlength="8" required>
+            <span class="error-msg">كلمة المرور 8 أحرف على الأقل</span>
+          </div>
+          <button type="submit" class="btn" id="login-btn">دخول</button>
+        </form>
+        <div class="switch-note" style="margin-top:18px;">ليس لديك حساب؟ <button id="go-signup">أنشئ حساباً جديداً</button></div>
+      </div>
+
+      <!-- ============ نموذج إنشاء حساب ============ -->
+      <div id="signup-view" style="display:none;">
+        <h1>أنشئ حسابك</h1>
+        <p class="form-sub">اختر نوع حسابك للبدء.</p>
+
+        <div class="role-grid" id="role-grid">
+          <label class="role-card" data-role="customer">
+            <input type="radio" name="role" value="customer">
+            <span class="ic">🛒</span><b>عميل</b><span>أشتري من المتاجر</span>
+          </label>
+          <label class="role-card" data-role="supplier">
+            <input type="radio" name="role" value="supplier">
+            <span class="ic">📦</span><b>تاجر جملة</b><span>مورّد بضاعة</span>
+          </label>
+          <label class="role-card" data-role="retailer">
+            <input type="radio" name="role" value="retailer">
+            <span class="ic">🏪</span><b>تاجر تجزئة</b><span>أبيع من مخزوني</span>
+          </label>
+          <label class="role-card" data-role="contracted">
+            <input type="radio" name="role" value="contracted">
+            <span class="ic">🤝</span><b>تاجر متعاقد</b><span>أعرض منتجات مورّد</span>
+          </label>
+        </div>
+
+        <div class="referral-note" id="referral-note">
+          🎁 تم تفعيل كود إحالة — ستحصل على خصم عند إتمام أول اشتراك/عملية شراء.
+        </div>
+
+        <form id="signup-form" novalidate>
+          <div class="field-group">
+            <label for="su-name">الاسم الكامل</label>
+            <input type="text" id="su-name" required>
+            <span class="error-msg">الاسم الكامل مطلوب</span>
+          </div>
+
+          <div class="field-group">
+            <label for="su-email">البريد الإلكتروني</label>
+            <input type="email" id="su-email" placeholder="example@email.com" required>
+            <span class="error-msg">أدخل بريداً إلكترونياً صحيحاً</span>
+          </div>
+
+          <div class="row-2">
+            <div class="field-group">
+              <label for="su-phone">رقم الهاتف (للتواصل فقط)</label>
+              <input type="tel" id="su-phone" placeholder="05XXXXXXXX" pattern="0[5-7][0-9]{8}" required>
+              <span class="error-msg">رقم هاتف جزائري غير صحيح</span>
+            </div>
+            <div class="field-group">
+              <label for="su-wilaya">الولاية</label>
+              <select id="su-wilaya" required>
+                <option value="" disabled selected>اختر ولايتك</option>
+                <option>الجزائر</option><option>وهران</option><option>قسنطينة</option>
+                <option>سطيف</option><option>عنابة</option><option>باتنة</option>
+                <option>بليدة</option><option>تلمسان</option><option>بجاية</option>
+                <option>ولاية أخرى</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- حقول إضافية تظهر فقط لأنواع التجار -->
+          <div class="store-fields" id="store-fields">
+            <div class="field-group">
+              <label for="su-store-name">اسم المتجر</label>
+              <input type="text" id="su-store-name">
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label for="su-pass">كلمة المرور</label>
+            <input type="password" id="su-pass" minlength="8" required>
+            <span class="hint">8 أحرف على الأقل</span>
+          </div>
+
+          <div class="field-group">
+            <label for="su-referral">كود الإحالة (اختياري)</label>
+            <input type="text" id="su-referral" placeholder="مثال: A1B2C3D4">
+          </div>
+
+          <div class="checkbox-row">
+            <input type="checkbox" id="su-terms" required>
+            <label for="su-terms">أوافق على <a href="#">شروط الاستخدام</a> وسياسة الخصوصية الخاصة بـ BOTSHOP-DZ</label>
+          </div>
+
+          <button type="submit" class="btn" id="signup-btn">إنشاء الحساب</button>
+        </form>
+        <div class="switch-note" style="margin-top:18px;">لديك حساب بالفعل؟ <button id="go-login">سجّل الدخول</button></div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ---------- تبديل بين تسجيل الدخول وإنشاء حساب ----------
+  const tabLogin = document.getElementById('tab-login');
+  const tabSignup = document.getElementById('tab-signup');
+  const loginView = document.getElementById('login-view');
+  const signupView = document.getElementById('signup-view');
+
+  function showLogin(){
+    loginView.style.display='block'; signupView.style.display='none';
+    tabLogin.classList.add('active'); tabSignup.classList.remove('active');
+  }
+  function showSignup(){
+    loginView.style.display='none'; signupView.style.display='block';
+    tabSignup.classList.add('active'); tabLogin.classList.remove('active');
+  }
+  tabLogin.addEventListener('click', showLogin);
+  tabSignup.addEventListener('click', showSignup);
+  document.getElementById('go-signup').addEventListener('click', showSignup);
+  document.getElementById('go-login').addEventListener('click', showLogin);
+
+  // ---------- قراءة معطيات الرابط (mode, plan, role, ref) ----------
+  const params = new URLSearchParams(location.search);
+  if(params.get('mode') === 'signup'){ showSignup(); } else { showLogin(); }
+
+  const roleFromUrl = params.get('role');
+  if(roleFromUrl){
+    const card = document.querySelector(`.role-card[data-role="${roleFromUrl}"]`);
+    if(card){ card.querySelector('input').checked = true; card.classList.add('selected'); toggleStoreFields(roleFromUrl); }
+  }
+  const refFromUrl = params.get('ref');
+  if(refFromUrl){
+    document.getElementById('su-referral').value = refFromUrl;
+    document.getElementById('referral-note').classList.add('show');
+  }
+
+  // ---------- اختيار نوع الحساب ----------
+  const roleCards = document.querySelectorAll('.role-card');
+  const storeFields = document.getElementById('store-fields');
+  function toggleStoreFields(role){
+    const isMerchant = ['supplier','retailer','contracted'].includes(role);
+    storeFields.classList.toggle('show', isMerchant);
+    document.getElementById('su-store-name').required = isMerchant;
+  }
+  roleCards.forEach(card=>{
+    card.addEventListener('click', ()=>{
+      roleCards.forEach(c=>c.classList.remove('selected'));
+      card.classList.add('selected');
+      toggleStoreFields(card.dataset.role);
+    });
+  });
+
+  // ---------- إظهار كود الإحالة عند الكتابة ----------
+  document.getElementById('su-referral').addEventListener('input', (e)=>{
+    document.getElementById('referral-note').classList.toggle('show', e.target.value.trim().length > 0);
+  });
+
+  // ---------- التحقق من الحقول وإظهار رسائل الخطأ ----------
+  function attachValidation(form){
+    form.querySelectorAll('input, select').forEach(input=>{
+      input.addEventListener('blur', ()=> input.setAttribute('data-touched','true'));
+    });
+  }
+  attachValidation(document.getElementById('login-form'));
+  attachValidation(document.getElementById('signup-form'));
+
+  // ---------- إعادة توجيه تلقائية لو كان هناك جلسة دخول فعّالة أصلاً ----------
+  (async ()=>{
+    const { data: { session } } = await sb.auth.getSession();
+    if(session){
+      const { data: profile } = await sb.from('profiles').select('role').eq('id', session.user.id).single();
+      if(profile){ location.href = redirectPathForRole(profile.role); }
+    }
+  })();
+
+  // ---------- إرسال النماذج (تجريبي — بانتظار ربط Supabase) ----------
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(()=> t.classList.remove('show'), 3200);
+  }
+
+  // ---------- تسجيل الدخول (Supabase Auth) ----------
+  document.getElementById('login-form').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const form = e.target;
+    form.querySelectorAll('input').forEach(i=>i.setAttribute('data-touched','true'));
+    if(!form.checkValidity()){ showToast('يرجى تصحيح الحقول المظلّلة'); return; }
+
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true; btn.textContent = 'جارٍ الدخول...';
+
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-pass').value;
+
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if(error){
+      showToast('فشل الدخول: ' + (error.message === 'Invalid login credentials' ? 'البريد أو كلمة المرور غير صحيحة' : error.message));
+      btn.disabled = false; btn.textContent = 'دخول';
+      return;
+    }
+
+    const { data: profile, error: profileError } = await sb
+      .from('profiles').select('role').eq('id', data.user.id).single();
+
+    if(profileError || !profile){
+      showToast('تم الدخول لكن لا يوجد ملف تعريف مرتبط بحسابك — تواصل مع الدعم');
+      btn.disabled = false; btn.textContent = 'دخول';
+      return;
+    }
+
+    showToast('تم الدخول بنجاح، جارٍ التحويل...');
+    setTimeout(()=>{ location.href = redirectPathForRole(profile.role); }, 700);
+  });
+
+  // ---------- إنشاء حساب (Supabase Auth + إدخال profiles) ----------
+  document.getElementById('signup-form').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const form = e.target;
+    form.querySelectorAll('input, select').forEach(i=>i.setAttribute('data-touched','true'));
+
+    const roleSelected = document.querySelector('input[name="role"]:checked');
+    if(!roleSelected){ showToast('يرجى اختيار نوع الحساب'); return; }
+    if(!form.checkValidity()){ showToast('يرجى تصحيح الحقول المظلّلة'); return; }
+
+    const btn = document.getElementById('signup-btn');
+    btn.disabled = true; btn.textContent = 'جارٍ الإنشاء...';
+
+    const email = document.getElementById('su-email').value.trim();
+    const password = document.getElementById('su-pass').value;
+    const fullName = document.getElementById('su-name').value.trim();
+    const phone = document.getElementById('su-phone').value.trim();
+    const wilaya = document.getElementById('su-wilaya').value;
+    const role = roleSelected.value;
+    const storeName = document.getElementById('su-store-name').value.trim();
+    const referralCodeInput = document.getElementById('su-referral').value.trim();
+
+    // 1) إنشاء حساب المصادقة
+    const { data: signUpData, error: signUpError } = await sb.auth.signUp({ email, password });
+    if(signUpError){
+      showToast('تعذّر إنشاء الحساب: ' + signUpError.message);
+      btn.disabled = false; btn.textContent = 'إنشاء الحساب';
+      return;
+    }
+
+    if(!signUpData.session){
+      // تفعيل تأكيد البريد مفعّل في إعدادات Supabase — لا توجد جلسة فورية لإدخال الملف الشخصي
+      showToast('تم إنشاء الحساب! تحقّق من بريدك الإلكتروني لتفعيله، ثم سجّل الدخول لإكمال بياناتك.');
+      btn.disabled = false; btn.textContent = 'إنشاء الحساب';
+      showLogin();
+      return;
+    }
+
+    // 2) البحث عن صاحب كود الإحالة إن وُجد (لا يوقف التسجيل إن كان غير صحيح)
+    let referredBy = null;
+    if(referralCodeInput){
+      const { data: referrer } = await sb.from('profiles').select('id').eq('referral_code', referralCodeInput).maybeSingle();
+      if(referrer){ referredBy = referrer.id; } else { showToast('تنبيه: كود الإحالة غير صحيح — تم إنشاء الحساب بدونه'); }
+    }
+
+    // 3) إدخال الملف الشخصي في profiles
+    const { error: profileInsertError } = await sb.from('profiles').insert({
+      id: signUpData.user.id,
+      role,
+      full_name: fullName,
+      phone,
+      wilaya,
+      store_name: ['supplier','retailer','contracted'].includes(role) ? storeName : null,
+      referred_by: referredBy
+    });
+
+    if(profileInsertError){
+      showToast('تم إنشاء حساب الدخول لكن فشل حفظ بيانات الملف الشخصي: ' + profileInsertError.message);
+      btn.disabled = false; btn.textContent = 'إنشاء الحساب';
+      return;
+    }
+
+    showToast('تم إنشاء حسابك بنجاح 🎉 جارٍ التحويل...');
+    setTimeout(()=>{ location.href = redirectPathForRole(role); }, 700);
+  });
+</script>
+
+</body>
+</html>

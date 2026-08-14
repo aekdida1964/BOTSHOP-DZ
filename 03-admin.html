@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة تحكم المشرف | BOTSHOP-DZ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800;900&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<style>
+  :root{
+    --blue:#38BDF8; --violet:#7C3AED; --violet-deep:#4C1D95; --ink:#171335;
+    --bg:#F8F8FC; --surface:#FFFFFF; --surface-alt:#F1F0FA; --line:#E4E1F4; --muted:#5B5678;
+    --success:#16A34A; --warning:#D97706; --danger:#DC2626;
+    --green-bg:#E8F8EE; --orange-bg:#FFF4E5; --red-bg:#FDE8E8;
+    --gradient: linear-gradient(135deg, var(--blue) 0%, var(--violet) 100%);
+    --radius:16px; --shadow:0 16px 40px -20px rgba(76,29,149,.25);
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'IBM Plex Sans Arabic', sans-serif; line-height:1.6;
+  }
+  h1,h2,h3,.display{ font-family:'Cairo'; font-weight:800; margin:0; }
+  .num{ font-family:'Space Grotesk','IBM Plex Sans Arabic'; direction:ltr; unicode-bidi:isolate; }
+  a{ color:inherit; text-decoration:none; }
+  button{ font-family:inherit; }
+
+  .app{ display:grid; grid-template-columns:260px 1fr; min-height:100vh; }
+
+  /* Sidebar */
+  .sidebar{ background:#fff; border-left:1px solid var(--line); padding:22px 16px; display:flex; flex-direction:column; }
+  .logo{ display:flex; align-items:center; gap:10px; font-family:'Cairo'; font-weight:900; font-size:1.1rem; padding:0 8px 22px; }
+  .logo-mark{ width:34px; height:34px; border-radius:10px; background:var(--gradient); display:flex; align-items:center; justify-content:center; color:#fff; }
+  .nav-group{ margin-bottom:18px; }
+  .nav-label{ font-size:.7rem; color:var(--muted); font-weight:700; padding:0 12px 8px; text-transform:uppercase; letter-spacing:.03em; }
+  .nav-item{
+    display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:12px;
+    font-size:.9rem; font-weight:600; color:var(--muted); cursor:pointer; margin-bottom:2px;
+    border:none; background:none; width:100%; text-align:right;
+  }
+  .nav-item:hover{ background:var(--surface-alt); color:var(--ink); }
+  .nav-item.active{ background:rgba(124,58,237,.08); color:var(--violet-deep); }
+  .nav-item .ic{ width:20px; text-align:center; }
+  .sidebar-foot{ margin-top:auto; display:flex; align-items:center; gap:10px; padding:12px; border-radius:12px; background:var(--surface-alt); }
+  .avatar{ width:36px; height:36px; border-radius:50%; background:var(--gradient); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; flex:none; }
+  .sidebar-foot small{ color:var(--muted); display:block; font-size:.72rem; }
+
+  /* Main */
+  .main{ padding:24px 28px 60px; max-width:1240px; }
+  .topbar{ display:flex; align-items:center; justify-content:space-between; margin-bottom:26px; gap:16px; flex-wrap:wrap; }
+  .topbar h1{ font-size:1.5rem; }
+  .topbar .search{
+    display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--line);
+    border-radius:12px; padding:9px 14px; min-width:260px;
+  }
+  .topbar .search input{ border:none; outline:none; font-family:inherit; font-size:.88rem; flex:1; background:none; }
+
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+
+  .kpi-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:26px; }
+  .kpi-card{ background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:20px; }
+  .kpi-card .top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+  .kpi-card .ic{ width:38px; height:38px; border-radius:11px; background:var(--gradient); color:#fff; display:flex; align-items:center; justify-content:center; }
+  .kpi-card .trend{ font-size:.72rem; font-weight:700; padding:3px 8px; border-radius:999px; }
+  .trend.up{ background:var(--green-bg); color:var(--success); }
+  .trend.down{ background:var(--red-bg); color:var(--danger); }
+  .kpi-card .value{ font-size:1.7rem; font-weight:700; font-family:'Space Grotesk'; }
+  .kpi-card .label{ color:var(--muted); font-size:.82rem; margin-top:4px; }
+
+  .card{ background:#fff; border:1px solid var(--line); border-radius:var(--radius); padding:22px; margin-bottom:22px; }
+  .card-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px; }
+  .card-head h3{ font-size:1.05rem; }
+  .card-head .note{ font-size:.75rem; color:var(--muted); background:var(--surface-alt); padding:4px 10px; border-radius:999px; }
+
+  .two-col{ display:grid; grid-template-columns:1.4fr 1fr; gap:22px; }
+
+  /* Bars (توزيع الخطط) */
+  .bars{ display:flex; flex-direction:column; gap:14px; }
+  .bar-row{ display:flex; align-items:center; gap:12px; font-size:.85rem; }
+  .bar-row .lbl{ width:90px; flex:none; font-weight:600; }
+  .bar-track{ flex:1; height:10px; background:var(--surface-alt); border-radius:999px; overflow:hidden; }
+  .bar-fill{ height:100%; border-radius:999px; background:var(--gradient); }
+  .bar-row .val{ width:42px; flex:none; text-align:left; font-weight:700; }
+
+  table{ width:100%; border-collapse:collapse; font-size:.85rem; }
+  thead th{ text-align:right; color:var(--muted); font-weight:600; padding:10px 8px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  tbody td{ padding:12px 8px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  tbody tr:last-child td{ border-bottom:none; }
+  .table-wrap{ overflow-x:auto; }
+
+  .merchant-cell{ display:flex; align-items:center; gap:10px; }
+  .merchant-avatar{ width:34px; height:34px; border-radius:10px; background:var(--surface-alt); display:flex; align-items:center; justify-content:center; font-weight:700; color:var(--violet-deep); flex:none; }
+  .merchant-name{ font-weight:700; }
+  .merchant-sub{ font-size:.75rem; color:var(--muted); }
+
+  .badge{ display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:999px; font-size:.72rem; font-weight:700; }
+  .badge.type-supplier{ background:#EFF6FF; color:#1D4ED8; }
+  .badge.type-retailer{ background:#F5F0FF; color:var(--violet-deep); }
+  .badge.type-contracted{ background:#FFF7ED; color:#C2410C; }
+  .badge.plan-free{ background:var(--surface-alt); color:var(--muted); }
+  .badge.plan-basic{ background:#E0F2FE; color:#0369A1; }
+  .badge.plan-pro{ background:#F5F0FF; color:var(--violet-deep); }
+  .badge.plan-enterprise{ background:#1E1B4B; color:#fff; }
+  .badge.status-active{ background:var(--green-bg); color:var(--success); }
+  .badge.status-suspended{ background:var(--red-bg); color:var(--danger); }
+  .badge.status-pending{ background:var(--orange-bg); color:var(--warning); }
+
+  .dot{ width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .dot.green{ background:var(--success); }
+  .dot.orange{ background:var(--warning); }
+  .dot.red{ background:var(--danger); }
+  .blist-row{ display:flex; align-items:center; gap:8px; font-weight:700; }
+
+  .row-actions{ display:flex; gap:8px; }
+  .icon-btn{
+    width:32px; height:32px; border-radius:9px; border:1px solid var(--line); background:#fff;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:.85rem;
+  }
+  .icon-btn:hover{ border-color:var(--violet); color:var(--violet-deep); }
+  .icon-btn.danger:hover{ border-color:var(--danger); color:var(--danger); }
+
+  select.filter, input.filter{
+    padding:9px 12px; border-radius:10px; border:1px solid var(--line); font-family:inherit; font-size:.82rem; background:#fff;
+  }
+  .filters{ display:flex; gap:10px; flex-wrap:wrap; }
+
+  .plan-edit-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .plan-edit-card{ border:1px solid var(--line); border-radius:14px; padding:16px; }
+  .plan-edit-card h4{ font-size:.92rem; margin-bottom:12px; }
+  .plan-edit-card .field{ margin-bottom:10px; }
+  .plan-edit-card .field label{ font-size:.72rem; color:var(--muted); display:block; margin-bottom:4px; }
+  .plan-edit-card .field input{ width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--line); font-family:inherit; font-size:.82rem; }
+  .plan-edit-card .save{ width:100%; margin-top:6px; padding:8px; border-radius:8px; border:none; background:var(--gradient); color:#fff; font-weight:700; font-size:.8rem; cursor:pointer; }
+
+  .founders-progress{ display:flex; flex-direction:column; gap:14px; }
+  .fp-row{ display:flex; align-items:center; gap:12px; }
+  .fp-tier{ width:70px; flex:none; font-size:.78rem; font-weight:700; }
+  .fp-track{ flex:1; height:8px; background:var(--surface-alt); border-radius:999px; overflow:hidden; }
+  .fp-fill{ height:100%; border-radius:999px; }
+  .fp-fill.gold{ background:linear-gradient(90deg,#F5D06A,#B8860B); }
+  .fp-fill.silver{ background:linear-gradient(90deg,#C7CBD9,#6B7280); }
+  .fp-count{ width:52px; flex:none; text-align:left; font-size:.78rem; font-weight:700; }
+
+  .empty-state{ text-align:center; padding:40px 20px; color:var(--muted); }
+  .empty-state .ic{ font-size:2rem; margin-bottom:10px; }
+
+  .toast{
+    position:fixed; bottom:24px; left:24px; background:var(--ink); color:#fff; padding:13px 18px;
+    border-radius:12px; font-size:.85rem; box-shadow:var(--shadow); transform:translateY(120%);
+    transition:transform .3s ease; z-index:100;
+  }
+  .toast.show{ transform:translateY(0); }
+
+  @media (max-width:1000px){
+    .app{ grid-template-columns:1fr; }
+    .sidebar{ display:none; }
+    .kpi-grid{ grid-template-columns:repeat(2,1fr); }
+    .two-col{ grid-template-columns:1fr; }
+    .plan-edit-grid{ grid-template-columns:repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="logo"><span class="logo-mark">ب</span> BOTSHOP-DZ</div>
+    <div class="nav-group">
+      <div class="nav-label">عام</div>
+      <button class="nav-item active" data-panel="overview"><span class="ic">📊</span> نظرة عامة</button>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">الإدارة</div>
+      <button class="nav-item" data-panel="merchants"><span class="ic">🏪</span> التجار</button>
+      <button class="nav-item" data-panel="plans"><span class="ic">💳</span> الخطط والاشتراكات</button>
+      <button class="nav-item" data-panel="blacklist"><span class="ic">🛡️</span> القائمة السوداء</button>
+      <button class="nav-item" data-panel="returns"><span class="ic">↩️</span> المرتجعات</button>
+      <button class="nav-item" data-panel="founders"><span class="ic">🏆</span> التجار المؤسسون</button>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">النظام</div>
+      <button class="nav-item" data-panel="settings"><span class="ic">⚙️</span> الإعدادات</button>
+    </div>
+    <div class="sidebar-foot">
+      <div class="avatar">A</div>
+      <div><b style="font-size:.85rem;" id="admin-name">المشرف العام</b><small id="admin-email">—</small></div>
+    </div>
+    <button class="nav-item" style="margin-top:8px; color:var(--danger);" onclick="signOutAndRedirect()"><span class="ic">🚪</span> تسجيل الخروج</button>
+  </aside>
+
+  <main class="main">
+
+    <!-- ============ نظرة عامة ============ -->
+    <section class="panel active" id="panel-overview">
+      <div class="topbar">
+        <h1>نظرة عامة</h1>
+        <div class="search">🔍 <input type="text" placeholder="ابحث عن تاجر، طلب، أو عميل..."></div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="top"><span class="ic">🏪</span><span class="trend up">▲ نشط</span></div>
+          <div class="value num" id="kpi-merchants">—</div>
+          <div class="label">تاجر مسجّل</div>
+        </div>
+        <div class="kpi-card">
+          <div class="top"><span class="ic">📦</span><span class="trend up">▲ هذا الشهر</span></div>
+          <div class="value num" id="kpi-orders">—</div>
+          <div class="label">طلب هذا الشهر</div>
+        </div>
+        <div class="kpi-card">
+          <div class="top"><span class="ic">💰</span><span class="trend up">▲</span></div>
+          <div class="value num" id="kpi-commission">—</div>
+          <div class="label">عمولات محصّلة (دج)</div>
+        </div>
+        <div class="kpi-card">
+          <div class="top"><span class="ic">🛡️</span><span class="trend down">تنبيه</span></div>
+          <div class="value num" id="kpi-red">—</div>
+          <div class="label">عملاء في القائمة الحمراء</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><h3>توزيع التجار حسب الخطة</h3><span class="note">بيانات تجريبية للعرض</span></div>
+          <div class="bars" id="plan-bars"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>توزيع القائمة السوداء</h3></div>
+          <div class="bars" id="blacklist-bars"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>أحدث التجار المسجّلين</h3><button class="icon-btn" onclick="switchPanel('merchants')">عرض الكل ←</button></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>التاجر</th><th>النوع</th><th>الخطة</th><th>تاريخ التسجيل</th><th>الحالة</th></tr></thead>
+          <tbody id="overview-merchants-body"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- ============ التجار ============ -->
+    <section class="panel" id="panel-merchants">
+      <div class="topbar">
+        <h1>إدارة التجار</h1>
+        <div class="filters">
+          <select class="filter" id="f-type">
+            <option value="">كل الأنواع</option>
+            <option value="supplier">تاجر جملة</option>
+            <option value="retailer">تاجر تجزئة</option>
+            <option value="contracted">تاجر متعاقد</option>
+          </select>
+          <select class="filter" id="f-plan">
+            <option value="">كل الخطط</option>
+            <option value="free">مجانية</option>
+            <option value="basic">أساسية</option>
+            <option value="pro">احترافية</option>
+            <option value="enterprise">مؤسساتية</option>
+          </select>
+          <input class="filter" id="f-search" type="text" placeholder="بحث بالاسم...">
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap"><table>
+          <thead><tr><th>التاجر</th><th>النوع</th><th>الخطة</th><th>الطلبات المستخدمة</th><th>الرصيد الداخلي</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+          <tbody id="merchants-body"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- ============ الخطط والاشتراكات ============ -->
+    <section class="panel" id="panel-plans">
+      <div class="topbar"><h1>الخطط والاشتراكات</h1></div>
+      <div class="card">
+        <div class="card-head"><h3>تعديل قيم الخطط</h3><span class="note">التغييرات تُطبَّق على الاشتراكات الجديدة فقط</span></div>
+        <div class="plan-edit-grid">
+          <div class="plan-edit-card">
+            <h4>المجانية</h4>
+            <div class="field"><label>السعر الشهري (دج)</label><input type="number" value="0" disabled></div>
+            <div class="field"><label>حد الطلبات (مدى الحياة)</label><input type="number" value="10"></div>
+            <div class="field"><label>العمولة الثابتة (دج)</label><input type="number" value="35"></div>
+            <div class="field"><label>نسبة العمولة (%)</label><input type="number" value="3" step="0.1"></div>
+            <button class="save">حفظ التعديلات</button>
+          </div>
+          <div class="plan-edit-card">
+            <h4>الأساسية</h4>
+            <div class="field"><label>السعر الشهري (دج)</label><input type="number" value="2000"></div>
+            <div class="field"><label>حد الطلبات / الشهر</label><input type="number" value="150"></div>
+            <div class="field"><label>العمولة الثابتة (دج)</label><input type="number" value="20"></div>
+            <div class="field"><label>نسبة العمولة (%)</label><input type="number" value="1.5" step="0.1"></div>
+            <button class="save">حفظ التعديلات</button>
+          </div>
+          <div class="plan-edit-card">
+            <h4>الاحترافية</h4>
+            <div class="field"><label>السعر الشهري (دج)</label><input type="number" value="5000"></div>
+            <div class="field"><label>حد الطلبات / الشهر</label><input type="number" value="300"></div>
+            <div class="field"><label>العمولة الثابتة (دج)</label><input type="number" value="12"></div>
+            <div class="field"><label>نسبة العمولة (%)</label><input type="number" value="0.8" step="0.1"></div>
+            <button class="save">حفظ التعديلات</button>
+          </div>
+          <div class="plan-edit-card">
+            <h4>المؤسساتية</h4>
+            <div class="field"><label>السعر الشهري (دج)</label><input type="number" value="8500"></div>
+            <div class="field"><label>حد الطلبات</label><input type="text" value="غير محدود" disabled></div>
+            <div class="field"><label>العمولة الثابتة (دج)</label><input type="number" value="6"></div>
+            <div class="field"><label>نسبة العمولة (%)</label><input type="number" value="0.3" step="0.1"></div>
+            <button class="save">حفظ التعديلات</button>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>سجل الترقيات والتجديدات الأخيرة</h3></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>التاجر</th><th>من</th><th>إلى</th><th>المبلغ المدفوع</th><th>التاريخ</th></tr></thead>
+          <tbody id="subs-body"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- ============ القائمة السوداء ============ -->
+    <section class="panel" id="panel-blacklist">
+      <div class="topbar">
+        <h1>القائمة السوداء المشتركة</h1>
+        <span class="card-head note" style="background:#fff;border:1px solid var(--line);">أخضر &lt; 3 مرتجعات · برتقالي &lt; 5 · أحمر ≥ 5</span>
+      </div>
+      <div class="card">
+        <div class="table-wrap"><table>
+          <thead><tr><th>العميل</th><th>الهاتف</th><th>عدد المرتجعات</th><th>التصنيف</th><th>آخر تحديث</th></tr></thead>
+          <tbody id="blacklist-body"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- ============ المرتجعات ============ -->
+    <section class="panel" id="panel-returns">
+      <div class="topbar"><h1>المرتجعات وحسابات المساعدة</h1></div>
+      <div class="card">
+        <div class="table-wrap"><table>
+          <thead><tr><th>رقم الطلب</th><th>التاجر</th><th>كلفة توصيل الإرجاع</th><th>نسبة المساعدة</th><th>المساعدة المضافة</th><th>الحالة</th></tr></thead>
+          <tbody id="returns-body"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- ============ التجار المؤسسون ============ -->
+    <section class="panel" id="panel-founders">
+      <div class="topbar"><h1>برنامج التجار المؤسسين</h1></div>
+      <div class="card">
+        <div class="card-head"><h3>التقدّم نحو شروط التأهل خلال الشهر التجريبي</h3></div>
+        <div class="founders-progress">
+          <div class="fp-row"><span class="fp-tier">🥇 ذهبي</span><div class="fp-track"><div class="fp-fill gold" style="width:65%"></div></div><span class="fp-count num">13/20</span></div>
+          <div class="fp-row"><span class="fp-tier">🥈 فضي</span><div class="fp-track"><div class="fp-fill silver" style="width:40%"></div></div><span class="fp-count num">8/20</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>قائمة المتأهلين حالياً</h3></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>التاجر</th><th>الفئة</th><th>عدد الإحالات المؤهلة</th><th>الحالة</th></tr></thead>
+          <tbody id="founders-body"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <!-- ============ الإعدادات ============ -->
+    <section class="panel" id="panel-settings">
+      <div class="topbar"><h1>إعدادات المنصة</h1></div>
+      <div class="two-col">
+        <div class="card">
+          <div class="card-head"><h3>وسائل الدفع المفعّلة</h3></div>
+          <div class="bars">
+            <div class="bar-row"><span class="lbl">CCP يدوي</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="val">مفعّل</span></div>
+            <div class="bar-row"><span class="lbl">BaridiMob</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="val">مفعّل</span></div>
+            <div class="bar-row"><span class="lbl">CIB / Chargily</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="val">مفعّل</span></div>
+            <div class="bar-row"><span class="lbl">الدفع عند الاستلام</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="val">مفعّل</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h3>شركات التوصيل</h3></div>
+          <div class="bars">
+            <div class="bar-row"><span class="lbl">Yalidine</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="val">API</span></div>
+            <div class="bar-row"><span class="lbl">Z Express</span><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><span class="val">API</span></div>
+            <div class="bar-row"><span class="lbl">K Express</span><div class="bar-track"><div class="bar-fill" style="width:55%"></div></div><span class="val">يدوي</span></div>
+            <div class="bar-row"><span class="lbl">DHL الجزائر</span><div class="bar-track"><div class="bar-fill" style="width:55%"></div></div><span class="val">يدوي</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ==========================================================================
+  // حارس الصلاحية — يتحقق أن المستخدم مسجّل دخول وأن دوره admin، وإلا يُعاد توجيهه
+  // ==========================================================================
+  let currentProfile = null;
+  (async ()=>{
+    const auth = await requireAuth(['admin']);
+    if(!auth) return; // requireAuth تكفّل بإعادة التوجيه عند الفشل
+    currentProfile = auth.profile;
+    document.getElementById('admin-name').textContent = auth.profile.full_name;
+    document.getElementById('admin-email').textContent = auth.session.user.email;
+  })();
+
+  // ==========================================================================
+  // بيانات تجريبية (Seed Data) لأغراض عرض واجهة الإدارة فقط — تُستبدل لاحقاً
+  // ببيانات حقيقية من Supabase عبر REST/Realtime API
+  // ==========================================================================
+  const merchants = [
+    { name:'متجر أمين للأحذية', type:'retailer', plan:'pro', ordersUsed:212, ordersLimit:300, balance:1450, status:'active', joined:'2026-06-02' },
+    { name:'مؤسسة الوادي للجملة', type:'supplier', plan:'enterprise', ordersUsed:940, ordersLimit:null, balance:6200, status:'active', joined:'2026-05-18' },
+    { name:'بوتيك سارة', type:'retailer', plan:'basic', ordersUsed:98, ordersLimit:150, balance:300, status:'active', joined:'2026-07-01' },
+    { name:'ديكو هوم دروبشيبينغ', type:'contracted', plan:'free', ordersUsed:10, ordersLimit:10, balance:0, status:'pending', joined:'2026-08-05' },
+    { name:'الأناقة للألبسة', type:'retailer', plan:'pro', ordersUsed:301, ordersLimit:300, balance:2100, status:'suspended', joined:'2026-04-22' },
+    { name:'مخزن الشرق للجملة', type:'supplier', plan:'basic', ordersUsed:60, ordersLimit:150, balance:150, status:'active', joined:'2026-07-20' },
+  ];
+
+  const blacklist = [
+    { name:'عميل غير معروف #4471', phone:'0551••••12', returns:1 },
+    { name:'عميل #2290', phone:'0662••••45', returns:2 },
+    { name:'عميل #3108', phone:'0770••••88', returns:4 },
+    { name:'عميل #5502', phone:'0556••••23', returns:6 },
+    { name:'عميل #1183', phone:'0698••••09', returns:3 },
+  ];
+
+  const returnsData = [
+    { orderId:'ORD-10432', merchant:'متجر أمين للأحذية', shipCost:400, pct:40, refund:160, status:'مضافة للرصيد' },
+    { orderId:'ORD-10391', merchant:'بوتيك سارة', shipCost:350, pct:30, refund:105, status:'مضافة للرصيد' },
+    { orderId:'ORD-10288', merchant:'مؤسسة الوادي للجملة', shipCost:500, pct:50, refund:250, status:'مضافة للرصيد' },
+    { orderId:'ORD-10199', merchant:'ديكو هوم دروبشيبينغ', shipCost:300, pct:15, refund:0, status:'تجاوز سقف الخطة' },
+  ];
+
+  const foundersData = [
+    { name:'متجر أمين للأحذية', tier:'ذهبي', count:4, status:'مؤهّل ✅' },
+    { name:'مؤسسة الوادي للجملة', tier:'فضي', count:2, status:'مؤهّل ✅' },
+    { name:'بوتيك سارة', tier:'ذهبي', count:2, status:'قيد التقدّم' },
+  ];
+
+  const subsHistory = [
+    { name:'بوتيك سارة', from:'مجانية', to:'أساسية', amount:2000, date:'2026-08-01' },
+    { name:'متجر أمين للأحذية', from:'أساسية', to:'احترافية', amount:5000, date:'2026-07-15' },
+  ];
+
+  const planColor = { free:'plan-free', basic:'plan-basic', pro:'plan-pro', enterprise:'plan-enterprise' };
+  const planLabel = { free:'مجانية', basic:'أساسية', pro:'احترافية', enterprise:'مؤسساتية' };
+  const typeColor = { supplier:'type-supplier', retailer:'type-retailer', contracted:'type-contracted' };
+  const typeLabel = { supplier:'تاجر جملة', retailer:'تاجر تجزئة', contracted:'تاجر متعاقد' };
+  const statusColor = { active:'status-active', suspended:'status-suspended', pending:'status-pending' };
+  const statusLabel = { active:'نشط', suspended:'موقوف', pending:'قيد المراجعة' };
+
+  function blColor(n){ return n >= 5 ? 'red' : (n < 3 ? 'green' : 'orange'); }
+  function blLabel(n){ return n >= 5 ? 'أحمر' : (n < 3 ? 'أخضر' : 'برتقالي'); }
+
+  // ---------- التنقل بين الأقسام ----------
+  function switchPanel(id){
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('panel-'+id).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.panel===id));
+  }
+  document.querySelectorAll('.nav-item').forEach(item=>{
+    item.addEventListener('click', ()=> switchPanel(item.dataset.panel));
+  });
+
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2800);
+  }
+
+  // ---------- نظرة عامة ----------
+  function renderOverview(){
+    document.getElementById('kpi-merchants').textContent = merchants.length;
+    const totalOrders = merchants.reduce((s,m)=>s+m.ordersUsed,0);
+    document.getElementById('kpi-orders').textContent = totalOrders.toLocaleString('en-US');
+    document.getElementById('kpi-commission').textContent = returnsData.reduce((s,r)=>s+r.refund,0) > 0
+      ? '—' : '—';
+    document.getElementById('kpi-commission').textContent = '184,500';
+    document.getElementById('kpi-red').textContent = blacklist.filter(b=>b.returns>=5).length;
+
+    const planCounts = { free:0, basic:0, pro:0, enterprise:0 };
+    merchants.forEach(m=> planCounts[m.plan]++);
+    const maxPlan = Math.max(...Object.values(planCounts), 1);
+    document.getElementById('plan-bars').innerHTML = Object.entries(planCounts).map(([k,v])=>`
+      <div class="bar-row">
+        <span class="lbl">${planLabel[k]}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(v/maxPlan*100)||0}%"></div></div>
+        <span class="val num">${v}</span>
+      </div>`).join('');
+
+    const blCounts = { green:0, orange:0, red:0 };
+    blacklist.forEach(b=> blCounts[blColor(b.returns)]++);
+    const maxBl = Math.max(...Object.values(blCounts), 1);
+    const blNames = { green:'🟢 أخضر', orange:'🟠 برتقالي', red:'🔴 أحمر' };
+    document.getElementById('blacklist-bars').innerHTML = Object.entries(blCounts).map(([k,v])=>`
+      <div class="bar-row">
+        <span class="lbl">${blNames[k]}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${(v/maxBl*100)||0}%"></div></div>
+        <span class="val num">${v}</span>
+      </div>`).join('');
+
+    document.getElementById('overview-merchants-body').innerHTML = merchants.slice(0,5).map(m=>`
+      <tr>
+        <td><div class="merchant-cell"><div class="merchant-avatar">${m.name[0]}</div><div><div class="merchant-name">${m.name}</div></div></div></td>
+        <td><span class="badge ${typeColor[m.type]}">${typeLabel[m.type]}</span></td>
+        <td><span class="badge ${planColor[m.plan]}">${planLabel[m.plan]}</span></td>
+        <td class="num">${m.joined}</td>
+        <td><span class="badge ${statusColor[m.status]}">${statusLabel[m.status]}</span></td>
+      </tr>`).join('');
+  }
+
+  // ---------- التجار ----------
+  function renderMerchants(){
+    const typeF = document.getElementById('f-type').value;
+    const planF = document.getElementById('f-plan').value;
+    const searchF = document.getElementById('f-search').value.trim().toLowerCase();
+
+    const filtered = merchants.filter(m =>
+      (!typeF || m.type===typeF) &&
+      (!planF || m.plan===planF) &&
+      (!searchF || m.name.toLowerCase().includes(searchF))
+    );
+
+    const body = document.getElementById('merchants-body');
+    if(filtered.length === 0){
+      body.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="ic">🔍</div>لا توجد نتائج مطابقة لبحثك</div></td></tr>`;
+      return;
+    }
+
+    body.innerHTML = filtered.map((m,i)=>`
+      <tr>
+        <td><div class="merchant-cell"><div class="merchant-avatar">${m.name[0]}</div><div><div class="merchant-name">${m.name}</div><div class="merchant-sub">انضم في ${m.joined}</div></div></div></td>
+        <td><span class="badge ${typeColor[m.type]}">${typeLabel[m.type]}</span></td>
+        <td><span class="badge ${planColor[m.plan]}">${planLabel[m.plan]}</span></td>
+        <td class="num">${m.ordersUsed} / ${m.ordersLimit ?? '∞'}</td>
+        <td class="num">${m.balance.toLocaleString('en-US')} دج</td>
+        <td><span class="badge ${statusColor[m.status]}">${statusLabel[m.status]}</span></td>
+        <td><div class="row-actions">
+          <button class="icon-btn" title="عرض التفاصيل" onclick="showToast('عرض ملف: ${m.name}')">👁️</button>
+          <button class="icon-btn" title="${m.status==='suspended' ? 'تفعيل' : 'تعليق'}" onclick="toggleStatus(${i})">${m.status==='suspended' ? '▶️' : '⏸️'}</button>
+        </div></td>
+      </tr>`).join('');
+  }
+  function toggleStatus(i){
+    const typeF = document.getElementById('f-type').value;
+    const planF = document.getElementById('f-plan').value;
+    const searchF = document.getElementById('f-search').value.trim().toLowerCase();
+    const filtered = merchants.filter(m => (!typeF || m.type===typeF) && (!planF || m.plan===planF) && (!searchF || m.name.toLowerCase().includes(searchF)));
+    const target = filtered[i];
+    target.status = target.status === 'suspended' ? 'active' : 'suspended';
+    showToast(target.status === 'suspended' ? `تم تعليق حساب ${target.name}` : `تم تفعيل حساب ${target.name}`);
+    renderMerchants();
+  }
+  ['f-type','f-plan'].forEach(id=> document.getElementById(id).addEventListener('change', renderMerchants));
+  document.getElementById('f-search').addEventListener('input', renderMerchants);
+
+  // ---------- الخطط: حفظ تجريبي ----------
+  document.querySelectorAll('.plan-edit-card .save').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const name = e.target.closest('.plan-edit-card').querySelector('h4').textContent;
+      showToast(`تم حفظ تعديلات خطة "${name}" (تجريبي — بانتظار ربط Supabase)`);
+    });
+  });
+
+  function renderSubsHistory(){
+    document.getElementById('subs-body').innerHTML = subsHistory.map(s=>`
+      <tr><td>${s.name}</td><td><span class="badge plan-free">${s.from}</span></td><td><span class="badge plan-pro">${s.to}</span></td><td class="num">${s.amount.toLocaleString('en-US')} دج</td><td class="num">${s.date}</td></tr>
+    `).join('');
+  }
+
+  // ---------- القائمة السوداء ----------
+  function renderBlacklist(){
+    document.getElementById('blacklist-body').innerHTML = blacklist.map(b=>`
+      <tr>
+        <td>${b.name}</td>
+        <td class="num">${b.phone}</td>
+        <td class="num">${b.returns}</td>
+        <td><div class="blist-row"><span class="dot ${blColor(b.returns)}"></span>${blLabel(b.returns)}</div></td>
+        <td class="num">اليوم</td>
+      </tr>`).join('');
+  }
+
+  // ---------- المرتجعات ----------
+  function renderReturns(){
+    document.getElementById('returns-body').innerHTML = returnsData.map(r=>`
+      <tr>
+        <td class="num">${r.orderId}</td>
+        <td>${r.merchant}</td>
+        <td class="num">${r.shipCost} دج</td>
+        <td class="num">${r.pct}%</td>
+        <td class="num">${r.refund} دج</td>
+        <td><span class="badge ${r.refund>0?'status-active':'status-pending'}">${r.status}</span></td>
+      </tr>`).join('');
+  }
+
+  // ---------- المؤسسون ----------
+  function renderFounders(){
+    document.getElementById('founders-body').innerHTML = foundersData.map(f=>`
+      <tr><td>${f.name}</td><td>${f.tier}</td><td class="num">${f.count}</td><td>${f.status}</td></tr>
+    `).join('');
+  }
+
+  // ---------- تشغيل أولي ----------
+  renderOverview();
+  renderMerchants();
+  renderSubsHistory();
+  renderBlacklist();
+  renderReturns();
+  renderFounders();
+</script>
+
+</body>
+</html>
