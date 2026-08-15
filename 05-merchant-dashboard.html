@@ -149,9 +149,21 @@
   .toast{ position:fixed; bottom:24px; left:24px; background:var(--ink); color:#fff; padding:13px 18px; border-radius:12px; font-size:.85rem; box-shadow:var(--shadow); transform:translateY(120%); transition:transform .3s ease; z-index:100; }
   .toast.show{ transform:translateY(0); }
 
+  .mobile-menu-btn{ display:none; width:38px; height:38px; border-radius:10px; border:1px solid var(--line); background:#fff; font-size:1.1rem; align-items:center; justify-content:center; flex:none; }
+  .sidebar-backdrop{ display:none; }
+
   @media (max-width:1000px){
     .app{ grid-template-columns:1fr; }
-    .sidebar{ display:none; }
+    .mobile-menu-btn{ display:flex; }
+    .sidebar{
+      position:fixed; top:0; right:0; height:100vh; width:270px; z-index:200;
+      transform:translateX(100%); transition:transform .28s ease;
+      box-shadow:-16px 0 40px -10px rgba(23,19,53,.3); display:flex;
+    }
+    .sidebar.mobile-open{ transform:translateX(0); }
+    .sidebar-backdrop.show{
+      display:block; position:fixed; inset:0; background:rgba(23,19,53,.4); z-index:150;
+    }
     .kpi-grid{ grid-template-columns:repeat(2,1fr); }
     .products-grid{ grid-template-columns:repeat(2,1fr); }
     .plan-compare{ grid-template-columns:repeat(2,1fr); }
@@ -161,6 +173,7 @@
 <body>
 
 <div class="app">
+  <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
   <aside class="sidebar">
     <div class="logo"><span class="logo-mark">ب</span> BOTSHOP-DZ</div>
 
@@ -195,7 +208,10 @@
     <!-- ============ نظرة عامة ============ -->
     <section class="panel active" id="panel-overview">
       <div class="topbar">
-        <h1>مرحباً، أمين 👋</h1>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <button class="mobile-menu-btn" id="mobile-menu-btn">☰</button>
+          <h1>مرحباً، أمين 👋</h1>
+        </div>
         <div class="plan-pill"><span class="dot"></span> الخطة الاحترافية</div>
       </div>
 
@@ -454,11 +470,20 @@
     { party:'مؤسسة الوادي للجملة (مورّد)', commission:'15%', status:'نشط', fee:500, terms:'يلتزم المورّد بشحن المنتج بفاتورة باسم التاجر المتعاقد حتى يكون البيع صحيحاً شرعاً...' },
   ];
 
+  // ---------- قائمة الجوال (فتح/إغلاق الدرج المنزلق) ----------
+  const mobileSidebar = document.querySelector('.sidebar');
+  const mobileBackdrop = document.getElementById('sidebar-backdrop');
+  function openMobileSidebar(){ mobileSidebar.classList.add('mobile-open'); mobileBackdrop.classList.add('show'); }
+  function closeMobileSidebar(){ mobileSidebar.classList.remove('mobile-open'); mobileBackdrop.classList.remove('show'); }
+  document.getElementById('mobile-menu-btn').addEventListener('click', openMobileSidebar);
+  mobileBackdrop.addEventListener('click', closeMobileSidebar);
+
   // ---------- التنقل ----------
   function switchPanel(id){
     document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
     document.getElementById('panel-'+id).classList.add('active');
     document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.panel===id));
+    closeMobileSidebar();
   }
   document.querySelectorAll('.nav-item[data-panel]').forEach(item=>{
     item.addEventListener('click', ()=> switchPanel(item.dataset.panel));
