@@ -350,28 +350,28 @@
     <section class="panel" id="panel-settings">
       <div class="topbar"><h1>إعدادات المتجر</h1></div>
       <div class="card">
-        <div class="field-group"><label>اسم المتجر</label><input type="text" value="متجر أمين للأحذية"></div>
-        <div class="field-group"><label>الولاية</label><input type="text" value="الجزائر العاصمة"></div>
-        <div class="field-group"><label>رابط فيديو المتجر (اختياري، 15–25 ثانية)</label><input type="text" placeholder="رابط الفيديو من Supabase Storage"></div>
-        <button class="btn btn-primary">حفظ التعديلات</button>
+        <div class="field-group"><label>اسم المتجر</label><input type="text" id="set-store-name"></div>
+        <div class="field-group"><label>الولاية</label><input type="text" id="set-wilaya"></div>
+        <div class="field-group"><label>رابط فيديو المتجر (اختياري، 15–25 ثانية)</label><input type="text" id="set-video-url" placeholder="رابط الفيديو من Supabase Storage"></div>
+        <button class="btn btn-primary" id="save-settings-btn">حفظ التعديلات</button>
       </div>
     </section>
 
   </main>
 </div>
 
-<!-- نافذة إضافة منتج -->
+<!-- نافذة إضافة/تعديل منتج -->
 <div class="modal" id="product-modal">
   <div class="modal-box">
-    <h3>إضافة منتج جديد</h3>
+    <h3 id="product-modal-title">إضافة منتج جديد</h3>
     <form id="product-form">
-      <div class="field-group"><label>اسم المنتج</label><input type="text" required></div>
-      <div class="field-group"><label>السعر (دج)</label><input type="number" required></div>
-      <div class="field-group"><label>الكمية المتوفرة</label><input type="number" required></div>
-      <div class="field-group"><label>الصور</label><input type="file" accept="image/*" multiple><span class="hint">حتى 3 صور مضغوطة كحد أقصى</span></div>
+      <div class="field-group"><label>اسم المنتج</label><input type="text" id="p-name" required></div>
+      <div class="field-group"><label>السعر (دج)</label><input type="number" id="p-price" min="0" required></div>
+      <div class="field-group"><label>الكمية المتوفرة</label><input type="number" id="p-stock" min="0" required></div>
+      <div class="field-group"><label>الصور</label><input type="file" accept="image/*" multiple disabled><span class="hint">رفع الصور يحتاج إعداد Supabase Storage أولاً — خطوة قادمة منفصلة</span></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" onclick="closeModal('product-modal')">إلغاء</button>
-        <button type="submit" class="btn btn-primary">حفظ المنتج</button>
+        <button type="submit" class="btn btn-primary" id="product-save-btn">حفظ المنتج</button>
       </div>
     </form>
   </div>
@@ -382,12 +382,14 @@
   <div class="modal-box">
     <h3>توثيق مرتجع</h3>
     <form id="return-form">
-      <div class="field-group"><label>رقم الطلب</label><input type="text" required></div>
-      <div class="field-group"><label>كلفة توصيل الإرجاع (دج)</label><input type="number" id="return-cost" required></div>
-      <div class="field-group"><label class="hint">المساعدة المتوقعة: <b class="num" id="return-preview">0 دج</b> (40% ضمن سقف خطتك)</label></div>
+      <div class="field-group"><label>الطلب</label>
+        <select id="return-order-select" required></select>
+      </div>
+      <div class="field-group"><label>كلفة توصيل الإرجاع (دج)</label><input type="number" id="return-cost" min="0" required></div>
+      <div class="field-group"><label class="hint">تُحسب نسبة المساعدة تلقائياً حسب خطتك عند الحفظ (بواسطة قاعدة البيانات مباشرة)</label></div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" onclick="closeModal('return-modal')">إلغاء</button>
-        <button type="submit" class="btn btn-primary">توثيق</button>
+        <button type="submit" class="btn btn-primary" id="return-save-btn">توثيق</button>
       </div>
     </form>
   </div>
@@ -415,40 +417,61 @@
   // ==========================================================================
   // حارس الصلاحية — يسمح فقط لأدوار supplier / retailer / contracted، وإلا يُعاد التوجيه
   // ==========================================================================
+  // ==========================================================================
+  // حارس الصلاحية + جلب/إنشاء متجر التاجر الحقيقي من Supabase
+  // ==========================================================================
   let currentProfile = null;
+  let currentStore = null;
+
+  async function getOrCreateStore(userId, role){
+    let { data: store, error } = await sb.from('stores').select('*').eq('owner_id', userId).maybeSingle();
+    if(error){ showToast('خطأ في جلب بيانات المتجر: ' + error.message); return null; }
+    if(!store){
+      // أول دخول لهذا التاجر — لا يملك بعد صفاً في stores، فيُنشأ له تلقائياً بخطة مجانية
+      const { data: newStore, error: createError } = await sb.from('stores')
+        .insert({ owner_id: userId, store_type: role, plan: 'free' })
+        .select().single();
+      if(createError){ showToast('تعذّر إنشاء متجرك: ' + createError.message); return null; }
+      store = newStore;
+      showToast('تم إنشاء متجرك تلقائياً بالخطة المجانية 🎉');
+    }
+    return store;
+  }
+
   (async ()=>{
     const auth = await requireAuth(['supplier','retailer','contracted']);
     if(!auth) return;
     currentProfile = auth.profile;
     document.getElementById('merchant-name').textContent = auth.profile.store_name || auth.profile.full_name;
     document.getElementById('merchant-avatar').textContent = (auth.profile.store_name || auth.profile.full_name)[0];
-    applyStoreType(auth.profile.role); // يُضبط تلقائياً من الحساب الحقيقي، وليس يدوياً
+    applyStoreType(auth.profile.role);
     document.getElementById('store-type-switch').value = auth.profile.role;
+
+    // تعبئة حقول الإعدادات ببيانات الحساب الحقيقية
+    document.getElementById('set-store-name').value = auth.profile.store_name || '';
+    document.getElementById('set-wilaya').value = auth.profile.wilaya || '';
+    document.getElementById('ref-code').textContent = auth.profile.referral_code || '—';
+
+    currentStore = await getOrCreateStore(auth.session.user.id, auth.profile.role);
+    if(!currentStore) return;
+
+    document.querySelector('.plan-pill').innerHTML =
+      `<span class="dot"></span> الخطة ${ { free:'المجانية', basic:'الأساسية', pro:'الاحترافية', enterprise:'المؤسساتية' }[currentStore.plan] }`;
+
+    await loadProducts();
+    await loadOrders();
+    await loadReturns();
   })();
 
   // ==========================================================================
   // بيانات تجريبية لعرض الواجهة فقط — تُستبدل لاحقاً باستعلامات Supabase الحقيقية
   // مرتبطة بمعرّف المتجر الحالي (store_id) بعد ربط المصادقة
   // ==========================================================================
-  const ordersData = [
-    { id:'ORD-10432', customer:'ياسين ب.', product:'حذاء رياضي أحمر', amount:4200, pay:'الدفع عند الاستلام', delivery:'Yalidine', status:'delivered' },
-    { id:'ORD-10444', customer:'سارة م.', product:'بوت شتوي', amount:7200, pay:'BaridiMob', delivery:'Z Express', status:'shipped' },
-    { id:'ORD-10451', customer:'كريم ز.', product:'حذاء كلاسيكي', amount:6800, pay:'CIB', delivery:'—', status:'processing' },
-    { id:'ORD-10399', customer:'أمينة ح.', product:'صندل صيفي', amount:2200, pay:'CCP', delivery:'K Express', status:'returned' },
-  ];
+  // ==========================================================================
+  // ✅ الطلبات والمنتجات والمرتجعات أصبحت مربوطة ببيانات حقيقية من Supabase (بالأسفل)
+  // ⏳ الإحالات والقائمة السوداء والعقود لا تزال بيانات تجريبية — لم تُربط بعد
+  // ==========================================================================
   const statusLabel = { processing:'قيد المعالجة', confirmed:'مؤكد', shipped:'تم الشحن', delivered:'تم التسليم', returned:'مرتجع', cancelled:'ملغى' };
-
-  const productsData = [
-    { name:'حذاء رياضي أحمر', price:4200, stock:12, icon:'👟' },
-    { name:'حذاء كلاسيكي جلد', price:6800, stock:5, icon:'👞' },
-    { name:'بوت شتوي', price:7200, stock:3, icon:'🥾' },
-    { name:'صندل صيفي', price:2200, stock:8, icon:'🩴' },
-  ];
-
-  const returnsData = [
-    { orderId:'ORD-10399', cost:400, pct:40, refund:160, status:'مضافة للرصيد' },
-    { orderId:'ORD-10288', cost:350, pct:40, refund:140, status:'مضافة للرصيد' },
-  ];
 
   const merchantReferrals = [
     { name:'بوتيك سارة', status:'اشترك في الخطة الأساسية', bonus:'500 دج' },
@@ -514,66 +537,180 @@
     renderContracts(type);
   }
 
-  // ---------- نظرة عامة: أحدث الطلبات ----------
+  // ---------- الطلبات (حقيقية) ----------
+  let currentOrders = [];
+  async function loadOrders(){
+    const { data, error } = await sb.from('orders')
+      .select('*, profiles(full_name)').eq('store_id', currentStore.id).order('created_at', { ascending:false });
+    if(error){ showToast('خطأ في جلب الطلبات: ' + error.message); return; }
+    currentOrders = data || [];
+    renderOverviewOrders();
+    renderOrders();
+  }
+
   function renderOverviewOrders(){
-    document.getElementById('overview-orders-body').innerHTML = ordersData.slice(0,4).map(o=>`
-      <tr><td class="num">${o.id}</td><td>${o.customer}</td><td class="num">${o.amount.toLocaleString('en-US')} دج</td><td>${o.pay}</td><td><span class="badge ${o.status}">${statusLabel[o.status]}</span></td></tr>
+    const body = document.getElementById('overview-orders-body');
+    if(currentOrders.length === 0){ body.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:24px;">لا توجد طلبات بعد</td></tr>`; return; }
+    body.innerHTML = currentOrders.slice(0,4).map(o=>`
+      <tr><td class="num">${o.order_number || o.id}</td><td>${o.profiles?.full_name || '—'}</td><td class="num">${Number(o.total_product_price).toLocaleString('en-US')} دج</td><td>${o.payment_method}</td><td><span class="badge ${o.order_status}">${statusLabel[o.order_status] || o.order_status}</span></td></tr>
     `).join('');
   }
 
-  // ---------- الطلبات ----------
   function renderOrders(){
-    document.getElementById('orders-body').innerHTML = ordersData.map((o,i)=>`
+    const body = document.getElementById('orders-body');
+    if(currentOrders.length === 0){ body.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--muted); padding:24px;">لا توجد طلبات بعد — ستظهر هنا فور استقبال أول طلب من متجرك</td></tr>`; return; }
+    body.innerHTML = currentOrders.map(o=>`
       <tr>
-        <td class="num">${o.id}</td><td>${o.customer}</td><td>${o.product}</td>
-        <td class="num">${o.amount.toLocaleString('en-US')} دج</td><td>${o.pay}</td><td>${o.delivery}</td>
-        <td><select class="status-select" onchange="updateStatus(${i}, this.value)">
-          ${Object.entries(statusLabel).map(([k,v])=>`<option value="${k}" ${k===o.status?'selected':''}>${v}</option>`).join('')}
+        <td class="num">${o.order_number || o.id}</td><td>${o.profiles?.full_name || '—'}</td><td class="num">${o.product_id.slice(0,8)}…</td>
+        <td class="num">${Number(o.total_product_price).toLocaleString('en-US')} دج</td><td>${o.payment_method}</td><td>${o.delivery_company || '—'}</td>
+        <td><select class="status-select" onchange="updateStatus('${o.id}', this.value)">
+          ${Object.entries(statusLabel).map(([k,v])=>`<option value="${k}" ${k===o.order_status?'selected':''}>${v}</option>`).join('')}
         </select></td>
       </tr>`).join('');
   }
-  function updateStatus(i, val){
-    ordersData[i].status = val;
-    showToast(`تم تحديث حالة الطلب ${ordersData[i].id} إلى "${statusLabel[val]}"`);
-    renderOverviewOrders();
+
+  async function updateStatus(orderId, val){
+    const { error } = await sb.from('orders').update({ order_status: val }).eq('id', orderId);
+    if(error){ showToast('تعذّر تحديث الحالة: ' + error.message); return; }
+    showToast(`تم تحديث حالة الطلب إلى "${statusLabel[val]}"`);
+    await loadOrders();
   }
 
-  // ---------- المنتجات ----------
+  // ---------- المنتجات (حقيقية) ----------
+  let currentProducts = [];
+  let editingProductId = null;
+
+  async function loadProducts(){
+    const { data, error } = await sb.from('products')
+      .select('*').eq('store_id', currentStore.id).order('created_at', { ascending:false });
+    if(error){ showToast('خطأ في جلب المنتجات: ' + error.message); return; }
+    currentProducts = data || [];
+    renderProducts();
+  }
+
   function renderProducts(){
     const grid = document.getElementById('products-grid');
-    grid.innerHTML = productsData.map(p=>`
+    const cards = currentProducts.map(p=>`
       <div class="product-card">
-        <div class="product-media">${p.icon}</div>
+        <div class="product-media">📦</div>
         <div class="product-info">
-          <b>${p.name}</b>
-          <span class="num">${p.price.toLocaleString('en-US')} دج · مخزون ${p.stock}</span>
-          <div class="row-actions"><button class="icon-btn" onclick="showToast('تعديل ${p.name}')">✏️</button><button class="icon-btn" onclick="showToast('حذف ${p.name}')">🗑️</button></div>
+          <b>${p.title}</b>
+          <span class="num">${Number(p.price).toLocaleString('en-US')} دج · مخزون ${p.stock}</span>
+          <div class="row-actions"><button class="icon-btn" onclick="openEditProduct('${p.id}')">✏️</button><button class="icon-btn" onclick="deleteProduct('${p.id}')">🗑️</button></div>
         </div>
-      </div>`).join('') + `<button class="add-product-card" id="add-product-inline">+<br>إضافة منتج</button>`;
-    document.getElementById('add-product-inline').addEventListener('click', ()=>openModal('product-modal'));
+      </div>`).join('');
+    grid.innerHTML = cards + `<button class="add-product-card" id="add-product-inline">+<br>إضافة منتج</button>`;
+    document.getElementById('add-product-inline').addEventListener('click', ()=>openAddProduct());
   }
-  document.getElementById('open-add-product').addEventListener('click', ()=>openModal('product-modal'));
-  document.getElementById('product-form').addEventListener('submit', (e)=>{
+
+  function openAddProduct(){
+    editingProductId = null;
+    document.getElementById('product-modal-title').textContent = 'إضافة منتج جديد';
+    document.getElementById('p-name').value = '';
+    document.getElementById('p-price').value = '';
+    document.getElementById('p-stock').value = '';
+    openModal('product-modal');
+  }
+  function openEditProduct(id){
+    const p = currentProducts.find(x=>x.id===id);
+    if(!p) return;
+    editingProductId = id;
+    document.getElementById('product-modal-title').textContent = 'تعديل المنتج';
+    document.getElementById('p-name').value = p.title;
+    document.getElementById('p-price').value = p.price;
+    document.getElementById('p-stock').value = p.stock;
+    openModal('product-modal');
+  }
+  async function deleteProduct(id){
+    if(!confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
+    const { error } = await sb.from('products').delete().eq('id', id);
+    if(error){ showToast('تعذّر الحذف: ' + error.message); return; }
+    showToast('تم حذف المنتج');
+    await loadProducts();
+  }
+
+  document.getElementById('open-add-product').addEventListener('click', ()=>openAddProduct());
+  document.getElementById('product-form').addEventListener('submit', async (e)=>{
     e.preventDefault();
-    showToast('تم حفظ المنتج (تجريبي — بانتظار ربط Supabase Storage)');
+    const btn = document.getElementById('product-save-btn');
+    btn.disabled = true; btn.textContent = 'جارٍ الحفظ...';
+
+    const payload = {
+      store_id: currentStore.id,
+      title: document.getElementById('p-name').value.trim(),
+      price: Number(document.getElementById('p-price').value),
+      stock: Number(document.getElementById('p-stock').value)
+    };
+
+    let error;
+    if(editingProductId){
+      ({ error } = await sb.from('products').update(payload).eq('id', editingProductId));
+    } else {
+      ({ error } = await sb.from('products').insert(payload));
+    }
+
+    btn.disabled = false; btn.textContent = 'حفظ المنتج';
+    if(error){ showToast('تعذّر حفظ المنتج: ' + error.message); return; }
+    showToast(editingProductId ? 'تم تعديل المنتج' : 'تم إضافة المنتج');
     closeModal('product-modal');
+    await loadProducts();
   });
 
-  // ---------- المرتجعات ----------
-  function renderReturns(){
-    document.getElementById('returns-body').innerHTML = returnsData.map(r=>`
-      <tr><td class="num">${r.orderId}</td><td class="num">${r.cost} دج</td><td class="num">${r.pct}%</td><td class="num">${r.refund} دج</td><td><span class="badge green">${r.status}</span></td></tr>
-    `).join('');
+  // ---------- المرتجعات (حقيقية) ----------
+  let currentReturns = [];
+
+  async function loadReturns(){
+    const { data, error } = await sb.from('returns')
+      .select('*, orders!inner(order_number, store_id)').eq('orders.store_id', currentStore.id)
+      .order('documented_at', { ascending:false });
+    if(error){ showToast('خطأ في جلب المرتجعات: ' + error.message); return; }
+    currentReturns = data || [];
+    renderReturns();
   }
-  document.getElementById('open-log-return').addEventListener('click', ()=>openModal('return-modal'));
-  document.getElementById('return-cost').addEventListener('input', (e)=>{
-    const preview = Math.round((Number(e.target.value)||0) * 0.4);
-    document.getElementById('return-preview').textContent = preview.toLocaleString('en-US') + ' دج';
+
+  function renderReturns(){
+    const body = document.getElementById('returns-body');
+    if(currentReturns.length === 0){ body.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:24px;">لا توجد مرتجعات موثّقة بعد</td></tr>`; return; }
+    body.innerHTML = currentReturns.map(r=>`
+      <tr>
+        <td class="num">${r.orders?.order_number || '—'}</td>
+        <td class="num">${Number(r.return_shipping_cost).toLocaleString('en-US')} دج</td>
+        <td class="num">${r.assistance_percentage}%</td>
+        <td class="num">${Number(r.refund_amount).toLocaleString('en-US')} دج</td>
+        <td><span class="badge ${r.status==='credited' ? 'green':'orange'}">${r.status==='credited' ? 'مضافة للرصيد' : 'تجاوز سقف الخطة'}</span></td>
+      </tr>`).join('');
+  }
+
+  document.getElementById('open-log-return').addEventListener('click', ()=>{
+    // تعبئة قائمة الطلبات القابلة للاختيار عند فتح النافذة
+    const select = document.getElementById('return-order-select');
+    if(currentOrders.length === 0){
+      select.innerHTML = `<option value="">لا توجد طلبات بعد</option>`;
+    } else {
+      select.innerHTML = currentOrders.map(o=>`<option value="${o.id}">${o.order_number || o.id}</option>`).join('');
+    }
+    document.getElementById('return-cost').value = '';
+    openModal('return-modal');
   });
-  document.getElementById('return-form').addEventListener('submit', (e)=>{
+
+  document.getElementById('return-form').addEventListener('submit', async (e)=>{
     e.preventDefault();
-    showToast('تم توثيق المرتجع وإضافة المساعدة إلى رصيدك (تجريبي)');
+    const orderId = document.getElementById('return-order-select').value;
+    if(!orderId){ showToast('اختر الطلب المرتبط بالمرتجع'); return; }
+
+    const btn = document.getElementById('return-save-btn');
+    btn.disabled = true; btn.textContent = 'جارٍ التوثيق...';
+
+    const { error } = await sb.from('returns').insert({
+      order_id: orderId,
+      return_shipping_cost: Number(document.getElementById('return-cost').value)
+    });
+
+    btn.disabled = false; btn.textContent = 'توثيق';
+    if(error){ showToast('تعذّر توثيق المرتجع: ' + error.message); return; }
+    showToast('تم توثيق المرتجع، وأُضيفت المساعدة لرصيدك تلقائياً حسب خطتك');
     closeModal('return-modal');
+    await loadReturns();
   });
 
   // ---------- القائمة السوداء ----------
@@ -611,6 +748,20 @@
     closeModal('contract-modal');
   });
 
+  // ---------- حفظ إعدادات المتجر (حقيقي) ----------
+  document.getElementById('save-settings-btn').addEventListener('click', async ()=>{
+    const btn = document.getElementById('save-settings-btn');
+    btn.disabled = true; btn.textContent = 'جارٍ الحفظ...';
+    const { error } = await sb.from('profiles').update({
+      store_name: document.getElementById('set-store-name').value.trim(),
+      wilaya: document.getElementById('set-wilaya').value.trim()
+    }).eq('id', currentProfile ? (await sb.auth.getSession()).data.session.user.id : null);
+    btn.disabled = false; btn.textContent = 'حفظ التعديلات';
+    if(error){ showToast('تعذّر الحفظ: ' + error.message); return; }
+    showToast('تم حفظ إعدادات متجرك بنجاح');
+    document.getElementById('merchant-name').textContent = document.getElementById('set-store-name').value.trim() || currentProfile.full_name;
+  });
+
   // ---------- الإحالات ----------
   function renderReferrals(){
     document.getElementById('merchant-referrals-body').innerHTML = merchantReferrals.map(r=>`
@@ -626,11 +777,7 @@
     showToast('تم نسخ كود الإحالة: ' + code);
   }
 
-  // ---------- تشغيل أولي ----------
-  renderOverviewOrders();
-  renderOrders();
-  renderProducts();
-  renderReturns();
+  // ---------- تشغيل أولي (البيانات الحقيقية تُحمَّل تلقائياً بعد جلب المتجر أعلاه) ----------
   renderReferrals();
 
 </script>
