@@ -271,6 +271,7 @@ create table public.orders (
   quantity integer not null default 1 check (quantity > 0),
   total_product_price numeric(10,2) not null check (total_product_price >= 0),
   shipping_cost numeric(10,2) not null default 0,
+  shipping_address text, -- عنوان التوصيل التفصيلي (شارع/حي)، بالإضافة إلى ولاية العميل المسجّلة في profiles
   payment_method payment_method not null,
   payment_status payment_status not null default 'pending',
   order_status order_status not null default 'processing',
