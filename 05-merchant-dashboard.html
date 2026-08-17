@@ -378,7 +378,12 @@
       <div class="field-group"><label>اسم المنتج</label><input type="text" id="p-name" required></div>
       <div class="field-group"><label>السعر (دج)</label><input type="number" id="p-price" min="0" required></div>
       <div class="field-group"><label>الكمية المتوفرة</label><input type="number" id="p-stock" min="0" required></div>
-      <div class="field-group"><label>الصور</label><input type="file" accept="image/*" multiple disabled><span class="hint">رفع الصور يحتاج إعداد Supabase Storage أولاً — خطوة قادمة منفصلة</span></div>
+      <div class="field-group">
+        <label>الصور (حتى 3 صور)</label>
+        <input type="file" id="p-images" accept="image/*" multiple>
+        <span class="hint" id="p-images-hint">اختر حتى 3 صور — سيُعاد ضغطها تلقائياً قبل الرفع</span>
+        <div id="p-images-preview" style="display:flex; gap:8px; margin-top:6px;"></div>
+      </div>
       <div class="modal-actions">
         <button type="button" class="btn btn-ghost" onclick="closeModal('product-modal')">إلغاء</button>
         <button type="submit" class="btn btn-primary" id="product-save-btn">حفظ المنتج</button>
@@ -594,9 +599,11 @@
     await loadOrders();
   }
 
-  // ---------- المنتجات (حقيقية) ----------
+  // ---------- المنتجات (حقيقية + رفع صور حقيقي) ----------
   let currentProducts = [];
   let editingProductId = null;
+  let selectedImageFiles = []; // ملفات الصور المختارة حديثاً (قبل الرفع)
+  let existingImageUrls = [];  // روابط الصور الحالية عند التعديل (تُستبدل فقط إن اختار المستخدم صوراً جديدة)
 
   async function loadProducts(){
     const { data, error } = await sb.from('products')
@@ -608,18 +615,46 @@
 
   function renderProducts(){
     const grid = document.getElementById('products-grid');
-    const cards = currentProducts.map(p=>`
+    const cards = currentProducts.map(p=>{
+      const thumb = (p.images && p.images.length > 0)
+        ? `<div class="product-media" style="background-image:url('${p.images[0]}'); background-size:cover; background-position:center;"></div>`
+        : `<div class="product-media">📦</div>`;
+      return `
       <div class="product-card">
-        <div class="product-media">📦</div>
+        ${thumb}
         <div class="product-info">
           <b>${p.title}</b>
           <span class="num">${Number(p.price).toLocaleString('en-US')} دج · مخزون ${p.stock}</span>
           <div class="row-actions"><button class="icon-btn" onclick="openEditProduct('${p.id}')">✏️</button><button class="icon-btn" onclick="deleteProduct('${p.id}')">🗑️</button></div>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
     grid.innerHTML = cards + `<button class="add-product-card" id="add-product-inline">+<br>إضافة منتج</button>`;
     document.getElementById('add-product-inline').addEventListener('click', ()=>openAddProduct());
   }
+
+  function resetImagePicker(){
+    selectedImageFiles = [];
+    existingImageUrls = [];
+    document.getElementById('p-images').value = '';
+    document.getElementById('p-images-preview').innerHTML = '';
+    document.getElementById('p-images-hint').textContent = 'اختر حتى 3 صور — سيُعاد ضغطها تلقائياً قبل الرفع';
+  }
+
+  function renderImagePreview(urls){
+    document.getElementById('p-images-preview').innerHTML = urls.map(u=>
+      `<div style="width:52px; height:52px; border-radius:8px; background-image:url('${u}'); background-size:cover; background-position:center; border:1px solid var(--line);"></div>`
+    ).join('');
+  }
+
+  document.getElementById('p-images').addEventListener('change', (e)=>{
+    const files = Array.from(e.target.files).slice(0, 3);
+    if(files.length < e.target.files.length){
+      document.getElementById('p-images-hint').textContent = '⚠️ تم اختيار أول 3 صور فقط (الحد الأقصى)';
+    }
+    selectedImageFiles = files;
+    renderImagePreview(files.map(f=>URL.createObjectURL(f)));
+  });
 
   function openAddProduct(){
     editingProductId = null;
@@ -627,6 +662,7 @@
     document.getElementById('p-name').value = '';
     document.getElementById('p-price').value = '';
     document.getElementById('p-stock').value = '';
+    resetImagePicker();
     openModal('product-modal');
   }
   function openEditProduct(id){
@@ -637,6 +673,12 @@
     document.getElementById('p-name').value = p.title;
     document.getElementById('p-price').value = p.price;
     document.getElementById('p-stock').value = p.stock;
+    resetImagePicker();
+    existingImageUrls = p.images || [];
+    if(existingImageUrls.length > 0){
+      renderImagePreview(existingImageUrls);
+      document.getElementById('p-images-hint').textContent = 'اختر صوراً جديدة فقط إن رغبت باستبدال الحالية';
+    }
     openModal('product-modal');
   }
   async function deleteProduct(id){
@@ -645,6 +687,41 @@
     if(error){ showToast('تعذّر الحذف: ' + error.message); return; }
     showToast('تم حذف المنتج');
     await loadProducts();
+  }
+
+  // ضغط الصورة داخل المتصفح قبل الرفع (أقصى عرض 1000px، جودة JPEG معقولة)
+  function compressImage(file, maxWidth = 1000, quality = 0.72){
+    return new Promise((resolve, reject)=>{
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = (e)=>{ img.src = e.target.result; };
+      reader.onerror = reject;
+      img.onload = ()=>{
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality);
+      };
+      img.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // رفع مجموعة صور لمجلد المنتج داخل bucket المتجر، وإرجاع روابطها العامة
+  async function uploadProductImages(productId, files){
+    const urls = [];
+    for(let i = 0; i < files.length; i++){
+      const compressed = await compressImage(files[i]);
+      const path = `${currentStore.id}/${productId}-${i}.jpg`;
+      const { error: uploadError } = await sb.storage.from('product-images')
+        .upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
+      if(uploadError){ throw uploadError; }
+      const { data: publicUrlData } = sb.storage.from('product-images').getPublicUrl(path);
+      urls.push(publicUrlData.publicUrl + '?v=' + Date.now()); // v= لتفادي تخزين المتصفح المؤقت لصورة قديمة بنفس الاسم
+    }
+    return urls;
   }
 
   document.getElementById('open-add-product').addEventListener('click', ()=>openAddProduct());
@@ -660,18 +737,35 @@
       stock: Number(document.getElementById('p-stock').value)
     };
 
-    let error;
-    if(editingProductId){
-      ({ error } = await sb.from('products').update(payload).eq('id', editingProductId));
-    } else {
-      ({ error } = await sb.from('products').insert(payload));
-    }
+    try {
+      let productId = editingProductId;
+      let error;
 
-    btn.disabled = false; btn.textContent = 'حفظ المنتج';
-    if(error){ showToast('تعذّر حفظ المنتج: ' + error.message); return; }
-    showToast(editingProductId ? 'تم تعديل المنتج' : 'تم إضافة المنتج');
-    closeModal('product-modal');
-    await loadProducts();
+      if(editingProductId){
+        ({ error } = await sb.from('products').update(payload).eq('id', editingProductId));
+        if(error) throw error;
+      } else {
+        const { data: inserted, error: insertError } = await sb.from('products').insert(payload).select().single();
+        if(insertError) throw insertError;
+        productId = inserted.id;
+      }
+
+      // رفع الصور الجديدة فقط إن اختار المستخدم صوراً (وإلا تبقى الصور الحالية كما هي)
+      if(selectedImageFiles.length > 0){
+        btn.textContent = 'جارٍ رفع الصور...';
+        const uploadedUrls = await uploadProductImages(productId, selectedImageFiles);
+        const { error: imgUpdateError } = await sb.from('products').update({ images: uploadedUrls }).eq('id', productId);
+        if(imgUpdateError) throw imgUpdateError;
+      }
+
+      showToast(editingProductId ? 'تم تعديل المنتج' : 'تم إضافة المنتج');
+      closeModal('product-modal');
+      await loadProducts();
+    } catch(err){
+      showToast('تعذّر حفظ المنتج: ' + err.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'حفظ المنتج';
+    }
   });
 
   // ---------- المرتجعات (حقيقية) ----------

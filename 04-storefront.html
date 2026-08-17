@@ -329,9 +329,13 @@
       grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:50px 20px; color:var(--muted);">لا توجد منتجات معروضة في هذا المتجر بعد</div>`;
       return;
     }
-    grid.innerHTML = products.map(p=>`
+    grid.innerHTML = products.map(p=>{
+      const media = (p.images && p.images.length > 0)
+        ? `<div class="product-media" style="background-image:url('${p.images[0]}'); background-size:cover; background-position:center;"><span class="stock-badge">${p.stock} متوفر</span></div>`
+        : `<div class="product-media">📦<span class="stock-badge">${p.stock} متوفر</span></div>`;
+      return `
       <div class="product-card">
-        <div class="product-media">📦<span class="stock-badge">${p.stock} متوفر</span></div>
+        ${media}
         <div class="product-body">
           <h3>${p.title}</h3>
           <div class="product-price"><span class="num">${Number(p.price).toLocaleString('en-US')}</span><span class="unit">دج</span></div>
@@ -339,7 +343,8 @@
             <button class="btn btn-primary" ${p.stock<=0?'disabled':''} onclick="addToCart('${p.id}')">${p.stock<=0?'نفدت الكمية':'أضف للسلة'}</button>
           </div>
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
 
   // ---------- السلة ----------
