@@ -349,6 +349,16 @@
     <!-- ============ إعدادات المتجر ============ -->
     <section class="panel" id="panel-settings">
       <div class="topbar"><h1>إعدادات المتجر</h1></div>
+
+      <div class="card">
+        <div class="card-head"><h3>🔗 رابط متجرك العام</h3></div>
+        <p style="font-size:.85rem; color:var(--muted); margin-bottom:12px;">شارك هذا الرابط مع عملائك — يعرض منتجاتك الحقيقية ويسمح لهم بالطلب مباشرة.</p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <input type="text" id="store-link-display" readonly style="flex:1; min-width:220px; background:var(--surface-alt);">
+          <button class="btn btn-primary" id="copy-store-link-btn" style="white-space:nowrap;">نسخ الرابط</button>
+        </div>
+      </div>
+
       <div class="card">
         <div class="field-group"><label>اسم المتجر</label><input type="text" id="set-store-name"></div>
         <div class="field-group"><label>الولاية</label><input type="text" id="set-wilaya"></div>
@@ -457,6 +467,14 @@
 
     document.querySelector('.plan-pill').innerHTML =
       `<span class="dot"></span> الخطة ${ { free:'المجانية', basic:'الأساسية', pro:'الاحترافية', enterprise:'المؤسساتية' }[currentStore.plan] }`;
+
+    // تعبئة رابط المتجر العام الحقيقي القابل للمشاركة
+    const storeLink = location.origin + location.pathname.replace(/05-merchant-dashboard\.html$/, '04-storefront.html') + '?store=' + currentStore.id;
+    document.getElementById('store-link-display').value = storeLink;
+    document.getElementById('copy-store-link-btn').addEventListener('click', ()=>{
+      navigator.clipboard?.writeText(storeLink);
+      showToast('تم نسخ رابط متجرك');
+    });
 
     await loadProducts();
     await loadOrders();
