@@ -87,6 +87,7 @@ create table public.stores (
   free_plan_lifetime_used boolean not null default false, -- يمنع تكرار العرض المجاني
   balance numeric(12,2) not null default 0, -- رصيد داخلي (مساعدة المرتجعات + مكافأة إحالة التجار)، غير نقدي، يُستعمل حصراً لترقية/تجديد الاشتراك
   returns_assisted_count integer not null default 0, -- عدد المرتجعات المدعومة ضمن سقف الخطة الحالية (10/13/25/34)
+  winner_radar_trial_remaining integer not null default 3, -- محاولات تجريبية مجانية لميزة Winner Radar (خارج الخطط الاحترافية/المؤسساتية)
   blacklist_enabled boolean not null default false, -- pro/enterprise فقط
   instant_assistance boolean not null default false, -- enterprise فقط
   is_active boolean not null default true,
@@ -695,6 +696,259 @@ create trigger trg_products_updated_at before update on public.products
   for each row execute function public.fn_set_updated_at();
 create trigger trg_orders_updated_at before update on public.orders
   for each row execute function public.fn_set_updated_at();
+
+-- ============================================================================
+-- 17. Winner Radar — منتج إضافي داخل حساب التاجر (حصري لمستخدمي BOTSHOP-DZ)
+--   الوصول الكامل: خطتا الاحترافية والمؤسساتية | 3 محاولات تجريبية لبقية الخطط
+--   الوحدة 2 (فلتر الجدوى اللوجستية) مجانية وغير محدودة دائماً، وتُستعمل كبوابة
+--   قرار أولى قبل استهلاك أي محاولة من محركي التحليل والمحتوى (المدعومين بالذكاء
+--   الاصطناعي فعلياً، وهما فقط ما يُخصم من winner_radar_trial_remaining)
+-- ============================================================================
+
+-- ----------------------------------------------------------------------------
+-- 17.1 suppliers_blackbook — قاعدة الموردين، تُدار حصرياً من المشرف
+-- ----------------------------------------------------------------------------
+create table public.suppliers_blackbook (
+  id uuid primary key default uuid_generate_v4(),
+  name text not null,
+  phone text not null,
+  wilaya text not null,
+  niche text not null, -- مثال: تجميل، إلكترونيات، مدرسي
+  notes text,
+  is_active boolean not null default true,
+  added_by uuid references public.profiles(id) on delete set null, -- المشرف الذي أضافه
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_blackbook_niche on public.suppliers_blackbook(niche);
+create index idx_blackbook_wilaya on public.suppliers_blackbook(wilaya);
+
+alter table public.suppliers_blackbook enable row level security;
+
+-- القراءة: لأي تاجر مسجّل (نوع حساب تاجر) وللمشرف، فقط للصفوف النشطة
+create policy "blackbook_select_merchants"
+  on public.suppliers_blackbook for select
+  using (
+    (is_active = true and exists (
+      select 1 from public.profiles p where p.id = auth.uid() and p.role in ('supplier','retailer','contracted')
+    ))
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  );
+
+-- الإضافة/التعديل/الحذف: للمشرف فقط
+create policy "blackbook_modify_admin_only"
+  on public.suppliers_blackbook for all
+  using (exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin'));
+
+create trigger trg_blackbook_updated_at before update on public.suppliers_blackbook
+  for each row execute function public.fn_set_updated_at();
+
+-- ----------------------------------------------------------------------------
+-- 17.2 winner_radar_logistics_checks — الوحدة 2: فلتر الجدوى اللوجستية
+--   مجاني وغير محدود دائماً لكل التجار، بغض النظر عن الخطة
+-- ----------------------------------------------------------------------------
+create table public.winner_radar_logistics_checks (
+  id uuid primary key default uuid_generate_v4(),
+  store_id uuid not null references public.stores(id) on delete cascade,
+  product_idea text,
+  has_liquids boolean not null default false,
+  is_oversized boolean not null default false, -- أكبر من 30 سم
+  needs_sizing boolean not null default false, -- يحتاج مقاسات
+  risk_level text not null default 'low', -- low / medium / high — تُحسب تلقائياً بمُشغّل
+  created_at timestamptz not null default now()
+);
+
+create index idx_logistics_checks_store on public.winner_radar_logistics_checks(store_id);
+
+alter table public.winner_radar_logistics_checks enable row level security;
+
+create policy "logistics_checks_select_own"
+  on public.winner_radar_logistics_checks for select
+  using (
+    exists (select 1 from public.stores s where s.id = store_id and s.owner_id = auth.uid())
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  );
+
+create policy "logistics_checks_insert_own"
+  on public.winner_radar_logistics_checks for insert
+  with check (exists (select 1 from public.stores s where s.id = store_id and s.owner_id = auth.uid()));
+
+-- دالة ومُشغّل: حساب مستوى المخاطرة تلقائياً عند كل فحص
+create or replace function public.fn_calculate_logistics_risk()
+returns trigger as $$
+begin
+  if new.has_liquids then
+    new.risk_level := 'high'; -- السوائل محفوفة بمخاطر رفض شركات التوصيل دائماً
+  elsif new.is_oversized and new.needs_sizing then
+    new.risk_level := 'high';
+  elsif new.is_oversized or new.needs_sizing then
+    new.risk_level := 'medium';
+  else
+    new.risk_level := 'low';
+  end if;
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger trg_calculate_logistics_risk
+  before insert on public.winner_radar_logistics_checks
+  for each row execute function public.fn_calculate_logistics_risk();
+
+-- ----------------------------------------------------------------------------
+-- 17.3 winner_radar_requests — الوحدتان 1 و4 (محركا الذكاء الاصطناعي)
+--   محكومتان بسقف المحاولات التجريبية لغير خطتي الاحترافية/المؤسساتية
+-- ----------------------------------------------------------------------------
+create table public.winner_radar_requests (
+  id uuid primary key default uuid_generate_v4(),
+  store_id uuid not null references public.stores(id) on delete cascade,
+  request_type text not null check (request_type in ('ad_analyzer', 'content_generator')),
+  input_text text not null,
+  output_text text, -- تُملأ لاحقاً من طبقة التطبيق/n8n بعد استدعاء الذكاء الاصطناعي
+  market_saturation_level text check (market_saturation_level in ('low','medium','high')), -- لطلبات ad_analyzer فقط، وصفي وليس رقماً مُختلَقاً
+  created_at timestamptz not null default now()
+);
+
+create index idx_wr_requests_store on public.winner_radar_requests(store_id);
+
+alter table public.winner_radar_requests enable row level security;
+
+create policy "wr_requests_select_own"
+  on public.winner_radar_requests for select
+  using (
+    exists (select 1 from public.stores s where s.id = store_id and s.owner_id = auth.uid())
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  );
+
+create policy "wr_requests_insert_own"
+  on public.winner_radar_requests for insert
+  with check (exists (select 1 from public.stores s where s.id = store_id and s.owner_id = auth.uid()));
+
+-- دالة ومُشغّل: يمنع الاستخدام بعد نفاد المحاولات التجريبية لغير الخطط المؤهّلة،
+-- ويخصم محاولة واحدة تلقائياً عند كل استخدام لغير خطتي pro/enterprise
+create or replace function public.fn_enforce_winner_radar_trial()
+returns trigger as $$
+declare
+  v_plan plan_type;
+  v_remaining integer;
+begin
+  select plan, winner_radar_trial_remaining into v_plan, v_remaining
+    from public.stores where id = new.store_id;
+
+  if v_plan not in ('pro', 'enterprise') then
+    if v_remaining <= 0 then
+      raise exception 'انتهت محاولاتك التجريبية المجانية لـ Winner Radar. يرجى ترقية خطتك إلى الاحترافية أو المؤسساتية للاستمرار.'
+        using errcode = 'P0002';
+    end if;
+    update public.stores set winner_radar_trial_remaining = winner_radar_trial_remaining - 1 where id = new.store_id;
+  end if;
+
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger trg_enforce_winner_radar_trial
+  before insert on public.winner_radar_requests
+  for each row execute function public.fn_enforce_winner_radar_trial();
+
+-- ----------------------------------------------------------------------------
+-- 17.4 winner_radar_sessions — محرك قرار الاختبار: يربط كل الوحدات لمنتج واحد
+--   ويحسب صافي الربح والقرار النهائي (Go/Caution/Stop) تلقائياً بمُشغّل SQL
+--   ملاحظة: نسبة المرتجعات وميزانية الإعلان تقديرات يُدخلها التاجر بنفسه،
+--   وليست أرقاماً تدّعي المنصة معرفتها فعلياً — لا هلوسة إحصائية
+-- ----------------------------------------------------------------------------
+create table public.winner_radar_sessions (
+  id uuid primary key default uuid_generate_v4(),
+  store_id uuid not null references public.stores(id) on delete cascade,
+  product_idea text not null,
+
+  -- مدخلات حاسبة الربح الصافي (تقديرات التاجر الخاصة)
+  purchase_price numeric(10,2),
+  suggested_sale_price numeric(10,2),
+  shipping_cost numeric(10,2),
+  estimated_return_rate_pct numeric(5,2), -- تقدير التاجر الخاص، ليس متوسطاً فعلياً من المنصة
+  estimated_ad_budget numeric(10,2),
+
+  -- مخرجات محسوبة تلقائياً
+  net_profit numeric(10,2),
+  net_margin_pct numeric(5,2),
+  verdict text check (verdict in ('go','caution','stop')), -- يُحسب تلقائياً، فارغ حتى اكتمال بيانات كافية
+
+  -- روابط لسجلات الوحدات الأخرى ضمن نفس الجلسة
+  logistics_check_id uuid references public.winner_radar_logistics_checks(id) on delete set null,
+  ad_analysis_id uuid references public.winner_radar_requests(id) on delete set null,
+  content_generation_id uuid references public.winner_radar_requests(id) on delete set null,
+
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_wr_sessions_store on public.winner_radar_sessions(store_id);
+
+alter table public.winner_radar_sessions enable row level security;
+
+create policy "wr_sessions_select_own"
+  on public.winner_radar_sessions for select
+  using (
+    exists (select 1 from public.stores s where s.id = store_id and s.owner_id = auth.uid())
+    or exists (select 1 from public.profiles p where p.id = auth.uid() and p.role = 'admin')
+  );
+
+create policy "wr_sessions_modify_own"
+  on public.winner_radar_sessions for all
+  using (exists (select 1 from public.stores s where s.id = store_id and s.owner_id = auth.uid()));
+
+create trigger trg_wr_sessions_updated_at before update on public.winner_radar_sessions
+  for each row execute function public.fn_set_updated_at();
+
+-- دالة ومُشغّل: يحسب صافي الربح والهامش والقرار النهائي تلقائياً عند أي إدخال/تعديل
+-- عتبات القرار (10%/20% هامش، ومستويات المخاطرة) قابلة للتعديل لاحقاً حسب خبرتك التجارية،
+-- وليست إحصائية مُدَّعاة — هي قواعد عمل داخلية فقط
+create or replace function public.fn_calculate_winner_radar_verdict()
+returns trigger as $$
+declare
+  v_logistics_risk text;
+  v_market_saturation text;
+begin
+  -- 1) حساب صافي الربح والهامش (رياضيات بسيطة على مدخلات التاجر نفسه)
+  new.net_profit := coalesce(new.suggested_sale_price,0) - coalesce(new.purchase_price,0)
+                     - coalesce(new.shipping_cost,0)
+                     - (coalesce(new.suggested_sale_price,0) * coalesce(new.estimated_return_rate_pct,0) / 100)
+                     - coalesce(new.estimated_ad_budget,0);
+
+  new.net_margin_pct := case when coalesce(new.suggested_sale_price,0) > 0
+    then round((new.net_profit / new.suggested_sale_price) * 100, 2)
+    else null end;
+
+  -- 2) جلب نتائج الوحدات المرتبطة إن وُجدت
+  if new.logistics_check_id is not null then
+    select risk_level into v_logistics_risk
+      from public.winner_radar_logistics_checks where id = new.logistics_check_id;
+  end if;
+  if new.ad_analysis_id is not null then
+    select market_saturation_level into v_market_saturation
+      from public.winner_radar_requests where id = new.ad_analysis_id;
+  end if;
+
+  -- 3) القرار النهائي: أحمر إن وُجد خطر جسيم، أصفر إن وُجدت مخاطرة متوسطة، أخضر إن كانت كل المؤشرات جيدة
+  if v_logistics_risk = 'high' or (new.net_margin_pct is not null and new.net_margin_pct < 10) then
+    new.verdict := 'stop';
+  elsif v_logistics_risk = 'medium' or v_market_saturation = 'high'
+        or (new.net_margin_pct is not null and new.net_margin_pct < 20) then
+    new.verdict := 'caution';
+  elsif new.logistics_check_id is not null and new.net_margin_pct is not null then
+    new.verdict := 'go';
+  else
+    new.verdict := null; -- بيانات غير كافية بعد لإصدار قرار
+  end if;
+
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger trg_calculate_winner_radar_verdict
+  before insert or update on public.winner_radar_sessions
+  for each row execute function public.fn_calculate_winner_radar_verdict();
 
 -- ============================================================================
 -- ملاحظات هامة قبل التنفيذ في Supabase:
