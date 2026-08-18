@@ -192,6 +192,7 @@
     <button class="nav-item" data-panel="returns"><span class="ic">↩️</span> المرتجعات</button>
     <button class="nav-item" data-panel="blacklist"><span class="ic">🛡️</span> القائمة السوداء</button>
     <button class="nav-item" data-panel="contracts" id="nav-contracts"><span class="ic">📜</span> العقود</button>
+    <button class="nav-item" data-panel="winner-radar"><span class="ic">🎯</span> Winner Radar</button>
     <button class="nav-item" data-panel="referrals"><span class="ic">🤝</span> الإحالات</button>
     <button class="nav-item" data-panel="subscription"><span class="ic">💳</span> الاشتراك والخطة</button>
     <button class="nav-item" data-panel="settings"><span class="ic">⚙️</span> إعدادات المتجر</button>
@@ -302,6 +303,58 @@
     <section class="panel" id="panel-contracts">
       <div class="topbar"><h1 id="contracts-title">عقود التوريد</h1><button class="btn btn-primary" id="open-add-contract">+ عقد جديد</button></div>
       <div class="card" id="contracts-list"></div>
+    </section>
+
+    <!-- ============ Winner Radar — محرك قرار الاختبار ============ -->
+    <section class="panel" id="panel-winner-radar">
+      <div class="topbar"><h1>🎯 Winner Radar — محرك قرار الاختبار</h1></div>
+
+      <div class="card" id="wr-trial-note"></div>
+
+      <div class="card">
+        <div class="card-head"><h3>١) فكرة المنتج</h3></div>
+        <div class="field-group"><label>اسم/فكرة المنتج</label><input type="text" id="wr-idea" placeholder="مثال: سماعة بلوتوث رياضية"></div>
+
+        <div class="card-head" style="margin-top:20px;"><h3>٢) الجدوى اللوجستية <span class="note">مجاني دائماً</span></h3></div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <label style="display:flex; align-items:center; gap:8px; font-size:.88rem;"><input type="checkbox" id="wr-liquids" style="width:auto;"> يحتوي على سوائل</label>
+          <label style="display:flex; align-items:center; gap:8px; font-size:.88rem;"><input type="checkbox" id="wr-oversized" style="width:auto;"> حجمه أكبر من 30 سم</label>
+          <label style="display:flex; align-items:center; gap:8px; font-size:.88rem;"><input type="checkbox" id="wr-sizing" style="width:auto;"> يحتاج مقاسات (ملابس/أحذية)</label>
+        </div>
+
+        <div class="card-head" style="margin-top:20px;"><h3>٣) حاسبة الربح الصافي <span class="note">تقديراتك الخاصة</span></h3></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="field-group"><label>سعر الشراء (دج)</label><input type="number" id="wr-purchase-price"></div>
+          <div class="field-group"><label>سعر البيع المقترح (دج)</label><input type="number" id="wr-sale-price"></div>
+          <div class="field-group"><label>كلفة التوصيل (دج)</label><input type="number" id="wr-shipping-cost"></div>
+          <div class="field-group"><label>نسبة مرتجعات متوقعة (%)</label><input type="number" id="wr-return-rate"></div>
+        </div>
+        <div class="field-group"><label>ميزانية إعلان متوقعة (دج)</label><input type="number" id="wr-ad-budget"></div>
+
+        <button class="btn btn-primary" style="width:100%; margin-top:16px;" id="wr-calculate-btn">احسب القرار الآن</button>
+      </div>
+
+      <div class="card" id="wr-verdict-card" style="display:none;"></div>
+
+      <div class="card">
+        <div class="card-head"><h3>٤) تحليل المنافسين <span class="note">🔒 يحتاج إعداد n8n</span></h3></div>
+        <textarea disabled placeholder="الصق نص/وصف إعلان منافس هنا..." style="width:100%; min-height:70px; opacity:.5; border-radius:10px; border:1.5px solid var(--line); padding:10px; font-family:inherit;"></textarea>
+        <button class="btn btn-ghost" disabled style="margin-top:10px;">قريباً</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>٥) مولّد المحتوى المحلي <span class="note">🔒 يحتاج إعداد n8n</span></h3></div>
+        <button class="btn btn-ghost" disabled>قريباً</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>📖 قاعدة الموردين (Blackbook)</h3></div>
+        <div class="filters" style="margin-bottom:14px;">
+          <select class="filter" id="wr-bb-niche"><option value="">كل الفئات</option></select>
+          <input class="filter" id="wr-bb-search" type="text" placeholder="بحث بالاسم أو الولاية...">
+        </div>
+        <div id="wr-blackbook-list"></div>
+      </div>
     </section>
 
     <!-- ============ الإحالات ============ -->
@@ -484,6 +537,8 @@
     await loadProducts();
     await loadOrders();
     await loadReturns();
+    loadWinnerRadarInfo();
+    await loadBlackbook();
   })();
 
   // ==========================================================================
@@ -873,6 +928,117 @@
     showToast('تم حفظ إعدادات متجرك بنجاح');
     document.getElementById('merchant-name').textContent = document.getElementById('set-store-name').value.trim() || currentProfile.full_name;
   });
+
+  // ---------- Winner Radar ----------
+  function loadWinnerRadarInfo(){
+    const unlimited = ['pro','enterprise'].includes(currentStore.plan);
+    document.getElementById('wr-trial-note').innerHTML = unlimited
+      ? `<div style="font-weight:700; color:var(--success); font-size:.88rem;">✅ وصول كامل غير محدود لتحليل المنافسين ومولّد المحتوى (خطتك الحالية)</div>`
+      : `<div style="font-weight:700; color:var(--warning); font-size:.88rem;">🎁 لديك <span class="num">${currentStore.winner_radar_trial_remaining}</span> من 3 محاولات تجريبية مجانية لتحليل المنافسين ومولّد المحتوى — الجدوى اللوجستية والربح الصافي مجانيان دائماً بلا حد</div>`;
+  }
+
+  function toWhatsAppNumberLocal(phone){
+    const digits = (phone||'').replace(/\D/g,'');
+    return digits.startsWith('0') ? '213' + digits.slice(1) : digits;
+  }
+
+  document.getElementById('wr-calculate-btn').addEventListener('click', async ()=>{
+    const idea = document.getElementById('wr-idea').value.trim();
+    if(!idea){ showToast('أدخل اسم/فكرة المنتج أولاً'); return; }
+
+    const btn = document.getElementById('wr-calculate-btn');
+    btn.disabled = true; btn.textContent = 'جارٍ الحساب...';
+
+    try {
+      const { data: logCheck, error: logError } = await sb.from('winner_radar_logistics_checks').insert({
+        store_id: currentStore.id,
+        product_idea: idea,
+        has_liquids: document.getElementById('wr-liquids').checked,
+        is_oversized: document.getElementById('wr-oversized').checked,
+        needs_sizing: document.getElementById('wr-sizing').checked
+      }).select().single();
+      if(logError) throw logError;
+
+      const { data: session, error: sessionError } = await sb.from('winner_radar_sessions').insert({
+        store_id: currentStore.id,
+        product_idea: idea,
+        purchase_price: Number(document.getElementById('wr-purchase-price').value) || null,
+        suggested_sale_price: Number(document.getElementById('wr-sale-price').value) || null,
+        shipping_cost: Number(document.getElementById('wr-shipping-cost').value) || null,
+        estimated_return_rate_pct: Number(document.getElementById('wr-return-rate').value) || null,
+        estimated_ad_budget: Number(document.getElementById('wr-ad-budget').value) || null,
+        logistics_check_id: logCheck.id
+      }).select().single();
+      if(sessionError) throw sessionError;
+
+      renderVerdict(session, logCheck);
+      showToast('تم احتساب القرار');
+    } catch(err){
+      showToast('تعذّر الحساب: ' + err.message);
+    } finally {
+      btn.disabled = false; btn.textContent = 'احسب القرار الآن';
+    }
+  });
+
+  function renderVerdict(session, logCheck){
+    const card = document.getElementById('wr-verdict-card');
+    card.style.display = 'block';
+    const meta = {
+      go: { emoji:'🟢', label:'انطلق بقوة (GO)', color:'var(--success)', bg:'#E8F8EE' },
+      caution: { emoji:'🟡', label:'عدّل بحذر (CAUTION)', color:'var(--warning)', bg:'#FFF4E5' },
+      stop: { emoji:'🔴', label:'تجنّب هذا المنتج (STOP)', color:'var(--danger)', bg:'#FDE8E8' }
+    };
+    const v = meta[session.verdict] || { emoji:'⏳', label:'بيانات غير كافية بعد', color:'var(--muted)', bg:'var(--surface-alt)' };
+    const riskLabel = { low:'🟢 منخفضة', medium:'🟠 متوسطة', high:'🔴 عالية' }[logCheck.risk_level] || '—';
+
+    card.innerHTML = `
+      <div style="background:${v.bg}; border-radius:14px; padding:22px; text-align:center; margin-bottom:16px;">
+        <div style="font-size:2.2rem;">${v.emoji}</div>
+        <div style="font-weight:800; font-size:1.1rem; color:${v.color};">${v.label}</div>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:.85rem;">
+        <div><b>مخاطرة لوجستية:</b> ${riskLabel}</div>
+        <div><b>صافي الربح التقديري:</b> <span class="num">${session.net_profit ?? '—'}</span> دج</div>
+        <div style="grid-column:1/-1;"><b>هامش الربح الصافي:</b> <span class="num">${session.net_margin_pct ?? '—'}</span>%</div>
+      </div>
+      <p style="font-size:.76rem; color:var(--muted); margin-top:14px;">
+        ⚠️ هذا القرار مبني على تقديراتك الخاصة لنسبة المرتجعات وميزانية الإعلان، وليس على بيانات فعلية متراكمة من المنصة بعد.
+      </p>
+    `;
+  }
+
+  let blackbookData = [];
+  async function loadBlackbook(){
+    const { data, error } = await sb.from('suppliers_blackbook').select('*').eq('is_active', true).order('created_at', { ascending:false });
+    if(error){ showToast('تعذّر تحميل قائمة الموردين: ' + error.message); return; }
+    blackbookData = data || [];
+    const niches = [...new Set(blackbookData.map(s=>s.niche))];
+    document.getElementById('wr-bb-niche').innerHTML = '<option value="">كل الفئات</option>' + niches.map(n=>`<option value="${n}">${n}</option>`).join('');
+    renderBlackbook();
+  }
+
+  function renderBlackbook(){
+    const niche = document.getElementById('wr-bb-niche').value;
+    const q = document.getElementById('wr-bb-search').value.trim().toLowerCase();
+    const filtered = blackbookData.filter(s=>
+      (!niche || s.niche===niche) &&
+      (!q || s.wilaya.toLowerCase().includes(q) || s.name.toLowerCase().includes(q))
+    );
+    const list = document.getElementById('wr-blackbook-list');
+    if(filtered.length === 0){ list.innerHTML = `<div style="text-align:center; color:var(--muted); padding:24px;">لا يوجد موردون مطابقون بعد — يُضاف المزيد تباعاً من طرف إدارة المنصة</div>`; return; }
+    list.innerHTML = filtered.map(s=>{
+      const wa = toWhatsAppNumberLocal(s.phone);
+      return `
+      <div class="contract-card">
+        <div class="contract-head"><b>${s.name}</b><span class="badge green">${s.niche}</span></div>
+        <div style="font-size:.82rem; color:var(--muted);">📍 ${s.wilaya} · 📞 ${s.phone}</div>
+        ${s.notes ? `<div class="contract-terms">${s.notes}</div>` : ''}
+        ${wa ? `<a href="https://wa.me/${wa}" target="_blank" class="btn btn-primary" style="display:inline-block; margin-top:10px; text-decoration:none;">راسله واتساب</a>` : ''}
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('wr-bb-niche').addEventListener('change', renderBlackbook);
+  document.getElementById('wr-bb-search').addEventListener('input', renderBlackbook);
 
   // ---------- الإحالات ----------
   function renderReferrals(){

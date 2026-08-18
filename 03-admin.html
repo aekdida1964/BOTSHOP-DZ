@@ -193,6 +193,7 @@
       <button class="nav-item" data-panel="blacklist"><span class="ic">🛡️</span> القائمة السوداء</button>
       <button class="nav-item" data-panel="returns"><span class="ic">↩️</span> المرتجعات</button>
       <button class="nav-item" data-panel="founders"><span class="ic">🏆</span> التجار المؤسسون</button>
+      <button class="nav-item" data-panel="blackbook"><span class="ic">📖</span> قاعدة الموردين</button>
     </div>
     <div class="nav-group">
       <div class="nav-label">النظام</div>
@@ -382,6 +383,23 @@
       </div>
     </section>
 
+    <!-- ============ قاعدة الموردين (Blackbook) ============ -->
+    <section class="panel" id="panel-blackbook">
+      <div class="topbar">
+        <h1>📖 قاعدة الموردين — Winner Radar</h1>
+        <button class="btn btn-primary" id="open-add-supplier" style="padding:10px 18px; border-radius:10px; border:none; background:var(--gradient); color:#fff; font-weight:700; font-size:.85rem;">+ إضافة مورّد</button>
+      </div>
+      <div class="card" style="padding:14px 18px;">
+        <span style="font-size:.8rem; color:var(--muted);">هذه القائمة تظهر فقط للتجار المسجّلين، وتُدار حصرياً من هنا لضمان دقتها وموثوقيتها.</span>
+      </div>
+      <div class="card">
+        <div class="table-wrap"><table>
+          <thead><tr><th>الاسم</th><th>الفئة</th><th>الولاية</th><th>الهاتف</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+          <tbody id="blackbook-body"></tbody>
+        </table></div>
+      </div>
+    </section>
+
     <!-- ============ الإعدادات ============ -->
     <section class="panel" id="panel-settings">
       <div class="topbar"><h1>إعدادات المنصة</h1></div>
@@ -410,6 +428,24 @@
   </main>
 </div>
 
+<!-- نافذة إضافة/تعديل مورّد -->
+<div class="modal" id="supplier-modal" style="position:fixed; inset:0; z-index:90; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(23,19,53,.35);">
+  <div style="background:#fff; border-radius:20px; width:100%; max-width:440px; padding:24px;">
+    <h3 id="supplier-modal-title" style="font-family:'Cairo'; font-weight:800; font-size:1.1rem; margin-bottom:16px;">إضافة مورّد جديد</h3>
+    <form id="supplier-form">
+      <div class="field-group" style="margin-bottom:14px;"><label style="font-size:.82rem; font-weight:700; display:block; margin-bottom:6px;">اسم المورّد</label><input type="text" id="s-name" required style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit;"></div>
+      <div class="field-group" style="margin-bottom:14px;"><label style="font-size:.82rem; font-weight:700; display:block; margin-bottom:6px;">رقم الهاتف / واتساب</label><input type="tel" id="s-phone" placeholder="05XXXXXXXX" required style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit;"></div>
+      <div class="field-group" style="margin-bottom:14px;"><label style="font-size:.82rem; font-weight:700; display:block; margin-bottom:6px;">الولاية</label><input type="text" id="s-wilaya" required style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit;"></div>
+      <div class="field-group" style="margin-bottom:14px;"><label style="font-size:.82rem; font-weight:700; display:block; margin-bottom:6px;">الفئة (النيش)</label><input type="text" id="s-niche" placeholder="مثال: تجميل، إلكترونيات، مدرسي" required style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit;"></div>
+      <div class="field-group" style="margin-bottom:14px;"><label style="font-size:.82rem; font-weight:700; display:block; margin-bottom:6px;">ملاحظات (اختياري)</label><textarea id="s-notes" style="width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid var(--line); font-family:inherit; min-height:60px;"></textarea></div>
+      <div style="display:flex; gap:10px;">
+        <button type="button" onclick="document.getElementById('supplier-modal').style.display='none'" style="flex:1; padding:11px; border-radius:10px; border:1.5px solid var(--line); background:#fff; font-weight:700; font-size:.85rem;">إلغاء</button>
+        <button type="submit" id="supplier-save-btn" style="flex:1; padding:11px; border-radius:10px; border:none; background:var(--gradient); color:#fff; font-weight:700; font-size:.85rem;">حفظ</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -426,53 +462,27 @@
   })();
 
   // ==========================================================================
-  // بيانات تجريبية (Seed Data) لأغراض عرض واجهة الإدارة فقط — تُستبدل لاحقاً
-  // ببيانات حقيقية من Supabase عبر REST/Realtime API
+  // ✅ نظرة عامة/التجار/القائمة السوداء/المرتجعات/المؤسسون/سجل الاشتراكات:
+  //    بيانات حقيقية من Supabase (بالأسفل)
+  // ⏳ تعديل قيم الخطط في تبويب "الخطط" لا يزال تجريبياً — القيم مُعرَّفة داخل
+  //    دوال SQL (fn_commission_structure/fn_assistance_structure) وليس جدولاً،
+  //    فتعديلها الفعلي يتطلب تعديل تلك الدوال مباشرة، وهذا خارج نطاق واجهة
+  //    بسيطة دون بناء جدول إعدادات مخصص — إن أردته لاحقاً أخبرني.
   // ==========================================================================
-  const merchants = [
-    { name:'متجر أمين للأحذية', type:'retailer', plan:'pro', ordersUsed:212, ordersLimit:300, balance:1450, status:'active', joined:'2026-06-02' },
-    { name:'مؤسسة الوادي للجملة', type:'supplier', plan:'enterprise', ordersUsed:940, ordersLimit:null, balance:6200, status:'active', joined:'2026-05-18' },
-    { name:'بوتيك سارة', type:'retailer', plan:'basic', ordersUsed:98, ordersLimit:150, balance:300, status:'active', joined:'2026-07-01' },
-    { name:'ديكو هوم دروبشيبينغ', type:'contracted', plan:'free', ordersUsed:10, ordersLimit:10, balance:0, status:'pending', joined:'2026-08-05' },
-    { name:'الأناقة للألبسة', type:'retailer', plan:'pro', ordersUsed:301, ordersLimit:300, balance:2100, status:'suspended', joined:'2026-04-22' },
-    { name:'مخزن الشرق للجملة', type:'supplier', plan:'basic', ordersUsed:60, ordersLimit:150, balance:150, status:'active', joined:'2026-07-20' },
-  ];
 
-  const blacklist = [
-    { name:'عميل غير معروف #4471', phone:'0551••••12', returns:1 },
-    { name:'عميل #2290', phone:'0662••••45', returns:2 },
-    { name:'عميل #3108', phone:'0770••••88', returns:4 },
-    { name:'عميل #5502', phone:'0556••••23', returns:6 },
-    { name:'عميل #1183', phone:'0698••••09', returns:3 },
-  ];
-
-  const returnsData = [
-    { orderId:'ORD-10432', merchant:'متجر أمين للأحذية', shipCost:400, pct:40, refund:160, status:'مضافة للرصيد' },
-    { orderId:'ORD-10391', merchant:'بوتيك سارة', shipCost:350, pct:30, refund:105, status:'مضافة للرصيد' },
-    { orderId:'ORD-10288', merchant:'مؤسسة الوادي للجملة', shipCost:500, pct:50, refund:250, status:'مضافة للرصيد' },
-    { orderId:'ORD-10199', merchant:'ديكو هوم دروبشيبينغ', shipCost:300, pct:15, refund:0, status:'تجاوز سقف الخطة' },
-  ];
-
-  const foundersData = [
-    { name:'متجر أمين للأحذية', tier:'ذهبي', count:4, status:'مؤهّل ✅' },
-    { name:'مؤسسة الوادي للجملة', tier:'فضي', count:2, status:'مؤهّل ✅' },
-    { name:'بوتيك سارة', tier:'ذهبي', count:2, status:'قيد التقدّم' },
-  ];
-
-  const subsHistory = [
-    { name:'بوتيك سارة', from:'مجانية', to:'أساسية', amount:2000, date:'2026-08-01' },
-    { name:'متجر أمين للأحذية', from:'أساسية', to:'احترافية', amount:5000, date:'2026-07-15' },
-  ];
+  let allStores = [];
+  let allBlacklist = [];
+  let allReturns = [];
+  let allFounders = [];
+  let allSubsHistory = [];
 
   const planColor = { free:'plan-free', basic:'plan-basic', pro:'plan-pro', enterprise:'plan-enterprise' };
   const planLabel = { free:'مجانية', basic:'أساسية', pro:'احترافية', enterprise:'مؤسساتية' };
   const typeColor = { supplier:'type-supplier', retailer:'type-retailer', contracted:'type-contracted' };
   const typeLabel = { supplier:'تاجر جملة', retailer:'تاجر تجزئة', contracted:'تاجر متعاقد' };
-  const statusColor = { active:'status-active', suspended:'status-suspended', pending:'status-pending' };
-  const statusLabel = { active:'نشط', suspended:'موقوف', pending:'قيد المراجعة' };
 
-  function blColor(n){ return n >= 5 ? 'red' : (n < 3 ? 'green' : 'orange'); }
-  function blLabel(n){ return n >= 5 ? 'أحمر' : (n < 3 ? 'أخضر' : 'برتقالي'); }
+  function blColorClass(c){ return c === 'red' ? 'red' : (c === 'orange' ? 'orange' : 'green'); }
+  function blLabelAr(c){ return c === 'red' ? '🔴 أحمر' : (c === 'orange' ? '🟠 برتقالي' : '🟢 أخضر'); }
 
   // ---------- قائمة الجوال (فتح/إغلاق الدرج المنزلق) ----------
   const mobileSidebar = document.querySelector('.sidebar');
@@ -499,18 +509,55 @@
     setTimeout(()=>t.classList.remove('show'), 2800);
   }
 
+  // ---------- جلب كل البيانات الحقيقية دفعة واحدة ----------
+  async function loadAllAdminData(){
+    const [storesRes, blacklistRes, returnsRes, foundersRes, subsRes] = await Promise.all([
+      sb.from('stores').select('*, profiles(full_name, store_name, phone)').order('created_at', { ascending:false }),
+      sb.from('shared_blacklist').select('*, profiles(full_name, phone)').order('updated_at', { ascending:false }),
+      sb.from('returns').select('*, orders(order_number, stores(profiles(store_name)))').order('documented_at', { ascending:false }),
+      sb.from('founding_merchants').select('*, stores(profiles(store_name))').order('qualified_at', { ascending:false }),
+      sb.from('subscription_history').select('*, stores(profiles(store_name))').order('changed_at', { ascending:false }).limit(20),
+    ]);
+
+    if(storesRes.error) showToast('خطأ في جلب التجار: ' + storesRes.error.message);
+    if(blacklistRes.error) showToast('خطأ في جلب القائمة السوداء: ' + blacklistRes.error.message);
+    if(returnsRes.error) showToast('خطأ في جلب المرتجعات: ' + returnsRes.error.message);
+    if(foundersRes.error) showToast('خطأ في جلب المؤسسين: ' + foundersRes.error.message);
+    if(subsRes.error) showToast('خطأ في جلب سجل الاشتراكات: ' + subsRes.error.message);
+
+    allStores = storesRes.data || [];
+    allBlacklist = blacklistRes.data || [];
+    allReturns = returnsRes.data || [];
+    allFounders = foundersRes.data || [];
+    allSubsHistory = subsRes.data || [];
+
+    renderOverview();
+    renderMerchants();
+    renderBlacklist();
+    renderReturns();
+    renderFounders();
+    renderSubsHistory();
+    await loadBlackbookAdmin();
+  }
+
   // ---------- نظرة عامة ----------
-  function renderOverview(){
-    document.getElementById('kpi-merchants').textContent = merchants.length;
-    const totalOrders = merchants.reduce((s,m)=>s+m.ordersUsed,0);
-    document.getElementById('kpi-orders').textContent = totalOrders.toLocaleString('en-US');
-    document.getElementById('kpi-commission').textContent = returnsData.reduce((s,r)=>s+r.refund,0) > 0
-      ? '—' : '—';
-    document.getElementById('kpi-commission').textContent = '184,500';
-    document.getElementById('kpi-red').textContent = blacklist.filter(b=>b.returns>=5).length;
+  async function renderOverview(){
+    document.getElementById('kpi-merchants').textContent = allStores.length;
+
+    const firstOfMonth = new Date(); firstOfMonth.setDate(1); firstOfMonth.setHours(0,0,0,0);
+    const { count: ordersCount } = await sb.from('orders').select('*', { count:'exact', head:true })
+      .gte('created_at', firstOfMonth.toISOString());
+    document.getElementById('kpi-orders').textContent = (ordersCount ?? 0).toLocaleString('en-US');
+
+    const { data: deliveredOrders } = await sb.from('orders').select('commission_amount')
+      .eq('order_status', 'delivered').gte('created_at', firstOfMonth.toISOString());
+    const totalCommission = (deliveredOrders || []).reduce((s,o)=> s + Number(o.commission_amount || 0), 0);
+    document.getElementById('kpi-commission').textContent = totalCommission.toLocaleString('en-US');
+
+    document.getElementById('kpi-red').textContent = allBlacklist.filter(b=>b.color==='red').length;
 
     const planCounts = { free:0, basic:0, pro:0, enterprise:0 };
-    merchants.forEach(m=> planCounts[m.plan]++);
+    allStores.forEach(s=> planCounts[s.plan]++);
     const maxPlan = Math.max(...Object.values(planCounts), 1);
     document.getElementById('plan-bars').innerHTML = Object.entries(planCounts).map(([k,v])=>`
       <div class="bar-row">
@@ -520,7 +567,7 @@
       </div>`).join('');
 
     const blCounts = { green:0, orange:0, red:0 };
-    blacklist.forEach(b=> blCounts[blColor(b.returns)]++);
+    allBlacklist.forEach(b=> blCounts[b.color]++);
     const maxBl = Math.max(...Object.values(blCounts), 1);
     const blNames = { green:'🟢 أخضر', orange:'🟠 برتقالي', red:'🔴 أحمر' };
     document.getElementById('blacklist-bars').innerHTML = Object.entries(blCounts).map(([k,v])=>`
@@ -530,14 +577,19 @@
         <span class="val num">${v}</span>
       </div>`).join('');
 
-    document.getElementById('overview-merchants-body').innerHTML = merchants.slice(0,5).map(m=>`
+    document.getElementById('overview-merchants-body').innerHTML = allStores.length === 0
+      ? `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:24px;">لا يوجد تجار مسجّلون بعد</td></tr>`
+      : allStores.slice(0,5).map(s=>{
+        const name = s.profiles?.store_name || s.profiles?.full_name || '—';
+        return `
       <tr>
-        <td><div class="merchant-cell"><div class="merchant-avatar">${m.name[0]}</div><div><div class="merchant-name">${m.name}</div></div></div></td>
-        <td><span class="badge ${typeColor[m.type]}">${typeLabel[m.type]}</span></td>
-        <td><span class="badge ${planColor[m.plan]}">${planLabel[m.plan]}</span></td>
-        <td class="num">${m.joined}</td>
-        <td><span class="badge ${statusColor[m.status]}">${statusLabel[m.status]}</span></td>
-      </tr>`).join('');
+        <td><div class="merchant-cell"><div class="merchant-avatar">${name[0]}</div><div><div class="merchant-name">${name}</div></div></div></td>
+        <td><span class="badge ${typeColor[s.store_type]}">${typeLabel[s.store_type]}</span></td>
+        <td><span class="badge ${planColor[s.plan]}">${planLabel[s.plan]}</span></td>
+        <td class="num">${new Date(s.created_at).toLocaleDateString('en-US')}</td>
+        <td><span class="badge ${s.is_active ? 'status-active' : 'status-suspended'}">${s.is_active ? 'نشط' : 'موقوف'}</span></td>
+      </tr>`;
+      }).join('');
   }
 
   // ---------- التجار ----------
@@ -546,11 +598,10 @@
     const planF = document.getElementById('f-plan').value;
     const searchF = document.getElementById('f-search').value.trim().toLowerCase();
 
-    const filtered = merchants.filter(m =>
-      (!typeF || m.type===typeF) &&
-      (!planF || m.plan===planF) &&
-      (!searchF || m.name.toLowerCase().includes(searchF))
-    );
+    const filtered = allStores.filter(s => {
+      const name = (s.profiles?.store_name || s.profiles?.full_name || '').toLowerCase();
+      return (!typeF || s.store_type===typeF) && (!planF || s.plan===planF) && (!searchF || name.includes(searchF));
+    });
 
     const body = document.getElementById('merchants-body');
     if(filtered.length === 0){
@@ -558,86 +609,198 @@
       return;
     }
 
-    body.innerHTML = filtered.map((m,i)=>`
+    body.innerHTML = filtered.map(s=>{
+      const name = s.profiles?.store_name || s.profiles?.full_name || '—';
+      return `
       <tr>
-        <td><div class="merchant-cell"><div class="merchant-avatar">${m.name[0]}</div><div><div class="merchant-name">${m.name}</div><div class="merchant-sub">انضم في ${m.joined}</div></div></div></td>
-        <td><span class="badge ${typeColor[m.type]}">${typeLabel[m.type]}</span></td>
-        <td><span class="badge ${planColor[m.plan]}">${planLabel[m.plan]}</span></td>
-        <td class="num">${m.ordersUsed} / ${m.ordersLimit ?? '∞'}</td>
-        <td class="num">${m.balance.toLocaleString('en-US')} دج</td>
-        <td><span class="badge ${statusColor[m.status]}">${statusLabel[m.status]}</span></td>
+        <td><div class="merchant-cell"><div class="merchant-avatar">${name[0]}</div><div><div class="merchant-name">${name}</div><div class="merchant-sub">انضم في ${new Date(s.created_at).toLocaleDateString('en-US')}</div></div></div></td>
+        <td><span class="badge ${typeColor[s.store_type]}">${typeLabel[s.store_type]}</span></td>
+        <td><span class="badge ${planColor[s.plan]}">${planLabel[s.plan]}</span></td>
+        <td class="num">${s.orders_used} / ${s.orders_limit ?? '∞'}</td>
+        <td class="num">${Number(s.balance).toLocaleString('en-US')} دج</td>
+        <td><span class="badge ${s.is_active ? 'status-active' : 'status-suspended'}">${s.is_active ? 'نشط' : 'موقوف'}</span></td>
         <td><div class="row-actions">
-          <button class="icon-btn" title="عرض التفاصيل" onclick="showToast('عرض ملف: ${m.name}')">👁️</button>
-          <button class="icon-btn" title="${m.status==='suspended' ? 'تفعيل' : 'تعليق'}" onclick="toggleStatus(${i})">${m.status==='suspended' ? '▶️' : '⏸️'}</button>
+          <button class="icon-btn" title="${s.is_active ? 'تعليق' : 'تفعيل'}" onclick="toggleStatus('${s.id}')">${s.is_active ? '⏸️' : '▶️'}</button>
         </div></td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
   }
-  function toggleStatus(i){
-    const typeF = document.getElementById('f-type').value;
-    const planF = document.getElementById('f-plan').value;
-    const searchF = document.getElementById('f-search').value.trim().toLowerCase();
-    const filtered = merchants.filter(m => (!typeF || m.type===typeF) && (!planF || m.plan===planF) && (!searchF || m.name.toLowerCase().includes(searchF)));
-    const target = filtered[i];
-    target.status = target.status === 'suspended' ? 'active' : 'suspended';
-    showToast(target.status === 'suspended' ? `تم تعليق حساب ${target.name}` : `تم تفعيل حساب ${target.name}`);
+
+  async function toggleStatus(storeId){
+    const store = allStores.find(s=>s.id===storeId);
+    if(!store) return;
+    const newStatus = !store.is_active;
+    const { error } = await sb.from('stores').update({ is_active: newStatus }).eq('id', storeId);
+    if(error){ showToast('تعذّر تحديث الحالة: ' + error.message); return; }
+    store.is_active = newStatus;
+    showToast(newStatus ? 'تم تفعيل الحساب' : 'تم تعليق الحساب');
     renderMerchants();
+    renderOverview();
   }
   ['f-type','f-plan'].forEach(id=> document.getElementById(id).addEventListener('change', renderMerchants));
   document.getElementById('f-search').addEventListener('input', renderMerchants);
 
-  // ---------- الخطط: حفظ تجريبي ----------
+  // ---------- الخطط: التعديل هنا لا يزال تجريبياً (انظر الملاحظة أعلى السكربت) ----------
   document.querySelectorAll('.plan-edit-card .save').forEach(btn=>{
     btn.addEventListener('click', (e)=>{
       const name = e.target.closest('.plan-edit-card').querySelector('h4').textContent;
-      showToast(`تم حفظ تعديلات خطة "${name}" (تجريبي — بانتظار ربط Supabase)`);
+      showToast(`قيم الخطط مُعرَّفة داخل دوال SQL حالياً — تعديل خطة "${name}" يتطلب تعديل الدالة مباشرة`);
     });
   });
 
   function renderSubsHistory(){
-    document.getElementById('subs-body').innerHTML = subsHistory.map(s=>`
-      <tr><td>${s.name}</td><td><span class="badge plan-free">${s.from}</span></td><td><span class="badge plan-pro">${s.to}</span></td><td class="num">${s.amount.toLocaleString('en-US')} دج</td><td class="num">${s.date}</td></tr>
-    `).join('');
+    const body = document.getElementById('subs-body');
+    if(allSubsHistory.length === 0){ body.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:20px;">لا توجد ترقيات موثّقة بعد</td></tr>`; return; }
+    body.innerHTML = allSubsHistory.map(s=>`
+      <tr>
+        <td>${s.stores?.profiles?.store_name || '—'}</td>
+        <td><span class="badge plan-free">${planLabel[s.old_plan] || '—'}</span></td>
+        <td><span class="badge plan-pro">${planLabel[s.new_plan]}</span></td>
+        <td class="num">${Number(s.amount_paid).toLocaleString('en-US')} دج</td>
+        <td class="num">${new Date(s.changed_at).toLocaleDateString('en-US')}</td>
+      </tr>`).join('');
   }
 
   // ---------- القائمة السوداء ----------
   function renderBlacklist(){
-    document.getElementById('blacklist-body').innerHTML = blacklist.map(b=>`
+    const body = document.getElementById('blacklist-body');
+    if(allBlacklist.length === 0){ body.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--muted); padding:20px;">لا يوجد عملاء مصنّفون بعد</td></tr>`; return; }
+    body.innerHTML = allBlacklist.map(b=>`
       <tr>
-        <td>${b.name}</td>
-        <td class="num">${b.phone}</td>
-        <td class="num">${b.returns}</td>
-        <td><div class="blist-row"><span class="dot ${blColor(b.returns)}"></span>${blLabel(b.returns)}</div></td>
-        <td class="num">اليوم</td>
+        <td>${b.profiles?.full_name || '—'}</td>
+        <td class="num">${b.profiles?.phone || '—'}</td>
+        <td class="num">${b.return_count}</td>
+        <td><div class="blist-row"><span class="dot ${blColorClass(b.color)}"></span>${blLabelAr(b.color)}</div></td>
+        <td class="num">${new Date(b.updated_at).toLocaleDateString('en-US')}</td>
       </tr>`).join('');
   }
 
   // ---------- المرتجعات ----------
   function renderReturns(){
-    document.getElementById('returns-body').innerHTML = returnsData.map(r=>`
+    const body = document.getElementById('returns-body');
+    if(allReturns.length === 0){ body.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--muted); padding:20px;">لا توجد مرتجعات موثّقة بعد</td></tr>`; return; }
+    body.innerHTML = allReturns.map(r=>`
       <tr>
-        <td class="num">${r.orderId}</td>
-        <td>${r.merchant}</td>
-        <td class="num">${r.shipCost} دج</td>
-        <td class="num">${r.pct}%</td>
-        <td class="num">${r.refund} دج</td>
-        <td><span class="badge ${r.refund>0?'status-active':'status-pending'}">${r.status}</span></td>
+        <td class="num">${r.orders?.order_number || '—'}</td>
+        <td>${r.orders?.stores?.profiles?.store_name || '—'}</td>
+        <td class="num">${Number(r.return_shipping_cost).toLocaleString('en-US')} دج</td>
+        <td class="num">${r.assistance_percentage}%</td>
+        <td class="num">${Number(r.refund_amount).toLocaleString('en-US')} دج</td>
+        <td><span class="badge ${r.status==='credited' ? 'status-active':'status-pending'}">${r.status==='credited' ? 'مضافة للرصيد' : 'تجاوز سقف الخطة'}</span></td>
       </tr>`).join('');
   }
 
   // ---------- المؤسسون ----------
   function renderFounders(){
-    document.getElementById('founders-body').innerHTML = foundersData.map(f=>`
-      <tr><td>${f.name}</td><td>${f.tier}</td><td class="num">${f.count}</td><td>${f.status}</td></tr>
-    `).join('');
+    const body = document.getElementById('founders-body');
+    if(allFounders.length === 0){ body.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--muted); padding:20px;">لا يوجد تجار مؤسسون مؤهّلون بعد</td></tr>`; return; }
+    body.innerHTML = allFounders.map(f=>`
+      <tr>
+        <td>${f.stores?.profiles?.store_name || '—'}</td>
+        <td>${f.tier === 'gold' ? '🥇 ذهبي' : '🥈 فضي'}</td>
+        <td class="num">${f.qualifying_referrals_count}</td>
+        <td>مؤهّل ✅</td>
+      </tr>`).join('');
   }
 
-  // ---------- تشغيل أولي ----------
-  renderOverview();
-  renderMerchants();
-  renderSubsHistory();
-  renderBlacklist();
-  renderReturns();
-  renderFounders();
+  // ---------- قاعدة الموردين (Blackbook) ----------
+  let allSuppliers = [];
+  let editingSupplierId = null;
+
+  async function loadBlackbookAdmin(){
+    const { data, error } = await sb.from('suppliers_blackbook').select('*').order('created_at', { ascending:false });
+    if(error){ showToast('خطأ في جلب الموردين: ' + error.message); return; }
+    allSuppliers = data || [];
+    renderBlackbookAdmin();
+  }
+
+  function renderBlackbookAdmin(){
+    const body = document.getElementById('blackbook-body');
+    if(allSuppliers.length === 0){ body.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--muted); padding:20px;">لم تُضف أي موردين بعد</td></tr>`; return; }
+    body.innerHTML = allSuppliers.map(s=>`
+      <tr>
+        <td>${s.name}</td>
+        <td><span class="badge plan-basic">${s.niche}</span></td>
+        <td class="num">${s.wilaya}</td>
+        <td class="num">${s.phone}</td>
+        <td><span class="badge ${s.is_active ? 'status-active':'status-suspended'}">${s.is_active ? 'نشط':'موقوف'}</span></td>
+        <td><div class="row-actions">
+          <button class="icon-btn" onclick="openEditSupplier('${s.id}')">✏️</button>
+          <button class="icon-btn danger" onclick="toggleSupplierActive('${s.id}')">${s.is_active ? '⏸️':'▶️'}</button>
+          <button class="icon-btn danger" onclick="deleteSupplier('${s.id}')">🗑️</button>
+        </div></td>
+      </tr>`).join('');
+  }
+
+  document.getElementById('open-add-supplier').addEventListener('click', ()=>{
+    editingSupplierId = null;
+    document.getElementById('supplier-modal-title').textContent = 'إضافة مورّد جديد';
+    document.getElementById('s-name').value = '';
+    document.getElementById('s-phone').value = '';
+    document.getElementById('s-wilaya').value = '';
+    document.getElementById('s-niche').value = '';
+    document.getElementById('s-notes').value = '';
+    document.getElementById('supplier-modal').style.display = 'flex';
+  });
+
+  function openEditSupplier(id){
+    const s = allSuppliers.find(x=>x.id===id);
+    if(!s) return;
+    editingSupplierId = id;
+    document.getElementById('supplier-modal-title').textContent = 'تعديل المورّد';
+    document.getElementById('s-name').value = s.name;
+    document.getElementById('s-phone').value = s.phone;
+    document.getElementById('s-wilaya').value = s.wilaya;
+    document.getElementById('s-niche').value = s.niche;
+    document.getElementById('s-notes').value = s.notes || '';
+    document.getElementById('supplier-modal').style.display = 'flex';
+  }
+
+  async function toggleSupplierActive(id){
+    const s = allSuppliers.find(x=>x.id===id);
+    const { error } = await sb.from('suppliers_blackbook').update({ is_active: !s.is_active }).eq('id', id);
+    if(error){ showToast('تعذّر التحديث: ' + error.message); return; }
+    showToast(!s.is_active ? 'تم تفعيل المورّد' : 'تم إيقاف المورّد');
+    await loadBlackbookAdmin();
+  }
+
+  async function deleteSupplier(id){
+    if(!confirm('هل أنت متأكد من حذف هذا المورّد نهائياً؟')) return;
+    const { error } = await sb.from('suppliers_blackbook').delete().eq('id', id);
+    if(error){ showToast('تعذّر الحذف: ' + error.message); return; }
+    showToast('تم حذف المورّد');
+    await loadBlackbookAdmin();
+  }
+
+  document.getElementById('supplier-form').addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const btn = document.getElementById('supplier-save-btn');
+    btn.disabled = true; btn.textContent = 'جارٍ الحفظ...';
+
+    const payload = {
+      name: document.getElementById('s-name').value.trim(),
+      phone: document.getElementById('s-phone').value.trim(),
+      wilaya: document.getElementById('s-wilaya').value.trim(),
+      niche: document.getElementById('s-niche').value.trim(),
+      notes: document.getElementById('s-notes').value.trim() || null
+    };
+
+    let error;
+    if(editingSupplierId){
+      ({ error } = await sb.from('suppliers_blackbook').update(payload).eq('id', editingSupplierId));
+    } else {
+      payload.added_by = currentProfile ? (await sb.auth.getSession()).data.session.user.id : null;
+      ({ error } = await sb.from('suppliers_blackbook').insert(payload));
+    }
+
+    btn.disabled = false; btn.textContent = 'حفظ';
+    if(error){ showToast('تعذّر الحفظ: ' + error.message); return; }
+    showToast(editingSupplierId ? 'تم تعديل المورّد' : 'تم إضافة المورّد');
+    document.getElementById('supplier-modal').style.display = 'none';
+    await loadBlackbookAdmin();
+  });
+
+  loadAllAdminData();
 </script>
 
 </body>
